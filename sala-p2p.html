@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P — Sala com Senha</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: white; 
+            min-height: 100vh; 
+            padding: 2rem; 
+            max-width: 480px; 
+            margin: 0 auto; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        h1 { text-align: center; margin-bottom: 2rem; font-size: 1.4rem; }
+        
+        .caixa {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        h3 { margin-bottom: 1rem; font-size: 1.1rem; }
+        input {
+            width: 100%;
+            padding: 0.9rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+        }
+        button {
+            width: 100%;
+            padding: 0.9rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+            border: none;
+            background: #4f46e5;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #374151; cursor: not-allowed; }
+
+        .status {
+            margin-top: 1.2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .aguardando { background: #854d0e; color: #fef3c7; }
+        .conectado { background: #166534; color: #bbf7d0; }
+        .erro { background: #991b1b; color: #fecaca; }
+        .info { background: #1e3a5f; color: #bfdbfe; }
+
+        .escondido { display: none !important; }
+
+        .chat {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-top: 1.5rem;
+        }
+        .msgs {
+            height: 260px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding-right: 0.5rem;
+            text-align: left;
+        }
+        .msg {
+            padding: 0.7rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 20px;
+            max-width: 85%;
+            line-height: 1.4;
+        }
+        .msg.eu {
+            background: #4f46e5;
+            margin-left: auto;
+            border-bottom-right-radius: 6px;
+        }
+        .msg.outro {
+            background: #334155;
+            margin-right: auto;
+            border-bottom-left-radius: 6px;
+        }
+        .linha {
+            display: flex;
+            gap: 0.6rem;
+        }
+        .linha input {
+            flex: 1;
+            margin: 0;
+            text-align: left;
+        }
+        .linha button {
+            width: auto;
+            padding: 0.9rem 1.4rem;
+            background: #16a34a;
+            margin-top: 0;
+        }
+        .linha button:hover { background: #15803d; }
+    </style>
+</head>
+<body>
+
+    <h1>🔗 P2P — Sala com Senha</h1>
+
+    <div id="tela-entrada" class="caixa">
+        <h3>Entrar na Sala</h3>
+        <input type="text" id="nomeSala" placeholder="Nome da sala" value="sala-principal">
+        <input type="password" id="senha" placeholder="Digite a senha da sala" value="1234">
+        <button id="btnEntrar">Conectar</button>
+        <div id="statusDiv" class="status info">Digite a senha para iniciar.</div>
+    </div>
+
+    <div id="tela-chat" class="chat escondido">
+        <h3 style="text-align:center; color:#22c55e; margin-bottom:1rem;">✅ Conectado com sucesso!</h3>
+        <div id="caixa-mensagens" class="msgs"></div>
+        <div class="linha">
+            <input type="text" id="campoMensagem" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')enviarMensagem()">
+            <button onclick="enviarMensagem()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://anvdihxzwvbpomejydid.supabase.co";
+        const SUPABASE_CHAVE = "sb_publishable_3OliyDBDFdpD_skoxIx-EQ_2eRE1tme";
+
+        let supabaseClient = null;
+        let meuId = Math.random().toString(36).substring(2, 8);
+        let nomeDaSala = "";
+        let senhaHash = "";
+        let pc = null;
+        let canal = null;
+        let inscricaoCanal = null;
+        let processados = new Set();
+
+        function hashSenha(senha) {
+            let h = 0;
+            for (let i = 0; i < senha.length; i++) {
+                const char = senha.charCodeAt(i);
+                h = ((h << 5) - h) + char;
+                h = h & h;
+            }
+            return 'h' + Math.abs(h).toString(16);
+        }
+
+        function addMsg(quem, texto) {
+            const div = document.createElement('div');
+            div.className = `msg ${quem === 'eu' ? 'eu' : 'outro'}`;
+            div.textContent = texto;
+            const cx = document.getElementById('caixa-mensagens');
+            cx.appendChild(div);
+            cx.scrollTop = cx.scrollHeight;
+        }
+
+        document.getElementById("btnEntrar").addEventListener("click", async () => {
+            const senhaEl = document.getElementById("senha");
+            const salaEl = document.getElementById("nomeSala");
+            const statusDiv = document.getElementById("statusDiv");
+
+            if (!senhaEl.value.trim() || !salaEl.value.trim()) {
+                statusDiv.textContent = "Preencha o nome e a senha da sala.";
+                statusDiv.className = "status erro";
+                return;
+            }
+
+            nomeDaSala = salaEl.value.trim();
+            senhaHash = hashSenha(senhaEl.value);
+
+            statusDiv.textContent = "Conectando ao servidor de sinalização...";
+            statusDiv.className = "status aguardando";
+
+            try {
+                const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+                supabaseClient = createClient(SUPABASE_URL, SUPABASE_CHAVE);
+
+                statusDiv.textContent = "Iniciando motor P2P...";
+                await iniciarConexaoP2P();
+
+                statusDiv.textContent = "Procurando parceiro na sala...";
+                await verificarSala();
+
+                escutarNovosUsuarios();
+
+            } catch (erro) {
+                statusDiv.textContent = "Erro: " + erro.message;
+                statusDiv.className = "status erro";
+                console.error(erro);
+            }
+        });
+
+        async function iniciarConexaoP2P() {
+            pc = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
+            pc.ondatachannel = (evento) => {
+                canal = evento.channel;
+                configurarCanal();
+            };
+
+            pc.onicecandidate = async (evento) => {
+                if (evento.candidate) {
+                    await enviarSinal({
+                        tipo: 'candidate',
+                        dados: { candidate: evento.candidate },
+                        senha: senhaHash
+                    });
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'connected') {
+                    document.getElementById('tela-entrada').classList.add('escondido');
+                    document.getElementById('tela-chat').classList.remove('escondido');
+                    addMsg('sistema', '✅ Conexão P2P estabelecida com sucesso!');
+                }
+            };
+        }
+
+        async function verificarSala() {
+            const statusDiv = document.getElementById("statusDiv");
+            const { data, error } = await supabaseClient
+                .from('sinalizacao')
+                .select('*')
+                .eq('sala', nomeDaSala)
+                .order('criado_em', { ascending: true })
+                .limit(30);
+
+            if (error) throw new Error(error.message);
+
+            const outros = data.filter(m => m.remetente !== meuId);
+
+            for (const msg of outros) {
+                if (processados.has(msg.id)) continue;
+                processados.add(msg.id);
+
+                if (msg.conteudo.senha !== senhaHash) {
+                    statusDiv.textContent = "❌ Alguém entrou com SENHA ERRADA!";
+                    statusDiv.className = "status erro";
+                    continue;
+                }
+
+                await processarSinalRecebido(msg.conteudo);
+            }
+
+            const temOferta = outros.some(m => m.conteudo.tipo === 'offer' && m.conteudo.senha === senhaHash);
+            if (!temOferta) {
+                statusDiv.textContent = "⏳ Sala aberta — aguardando parceiro...";
+                statusDiv.className = "status aguardando";
+
+                setTimeout(async () => {
+                    if (!pc.localDescription) {
+                        canal = pc.createDataChannel('chat');
+                        configurarCanal();
+
+                        const oferta = await pc.createOffer();
+                        await pc.setLocalDescription(oferta);
+
+                        await enviarSinal({
+                            tipo: 'offer',
+                            dados: pc.localDescription,
+                            senha: senhaHash
+                        });
+                        statusDiv.textContent = "📡 Oferta publicada! Aguardando o Lado B...";
+                    }
+                }, 1000);
+            }
+        }
+
+        function escutarNovosUsuarios() {
+            inscricaoCanal = supabaseClient
+                .channel('sala:' + nomeDaSala)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'sinalizacao',
+                    filter: `sala=eq.${nomeDaSala}`
+                }, async (evento) => {
+                    const msg = evento.new;
+                    if (msg.remetente === meuId) return;
+                    if (processados.has(msg.id)) return;
+                    processados.add(msg.id);
+
+                    const statusDiv = document.getElementById("statusDiv");
+                    if (msg.conteudo.senha !== senhaHash) {
+                        statusDiv.textContent = "❌ Tentativa com SENHA ERRADA!";
+                        statusDiv.className = "status erro";
+                        return;
+                    }
+
+                    await processarSinalRecebido(msg.conteudo);
+                })
+                .subscribe();
+        }
+
+        async function processarSinalRecebido(conteudo) {
+            const statusDiv = document.getElementById("statusDiv");
+            try {
+                if (!pc) await iniciarConexaoP2P();
+
+                if (conteudo.tipo === 'offer') {
+                    if (!pc.remoteDescription) {
+                        await pc.setRemoteDescription(new RTCSessionDescription(conteudo.dados));
+                        const resposta = await pc.createAnswer();
+                        await pc.setLocalDescription(resposta);
+
+                        await enviarSinal({
+                            tipo: 'answer',
+                            dados: pc.localDescription,
+                            senha: senhaHash
+                        });
+                        statusDiv.textContent = "🟢 Resposta enviada! Conectando...";
+                        statusDiv.className = "status aguardando";
+                    }
+                } else if (conteudo.tipo === 'answer') {
+                    if (!pc.remoteDescription) {
+                        await pc.setRemoteDescription(new RTCSessionDescription(conteudo.dados));
+                    }
+                } else if (conteudo.tipo === 'candidate' && conteudo.dados?.candidate) {
+                    await pc.addIceCandidate(new RTCIceCandidate(conteudo.dados.candidate));
+                }
+            } catch (erro) {
+                statusDiv.textContent = "⚠️ Erro no sinal: " + erro.message;
+                statusDiv.className = "status erro";
+            }
+        }
+
+        async function enviarSinal(conteudo) {
+            await supabaseClient.from('sinalizacao').insert({
+                sala: nomeDaSala,
+                remetente: meuId,
+                destinatario: 'todos',
+                conteudo: conteudo
+            });
+        }
+
+        function configurarCanal() {
+            canal.onopen = () => {
+                document.getElementById('tela-entrada').classList.add('escondido');
+                document.getElementById('tela-chat').classList.remove('escondido');
+                addMsg('sistema', '✅ Conexão P2P estabelecida com sucesso!');
+            };
+            canal.onmessage = (e) => {
+                addMsg('outro', e.data);
+            };
+            canal.onclose = () => {
+                addMsg('sistema', '⚠️ Conexão perdida.');
+            };
+        }
+
+        window.enviarMensagem = function() {
+            const campo = document.getElementById('campoMensagem');
+            const texto = campo.value.trim();
+            if (!texto || !canal || canal.readyState !== 'open') return;
+            canal.send(texto);
+            addMsg('eu', texto);
+            campo.value = '';
+        };
+    </script>
+</body>
+</html>
