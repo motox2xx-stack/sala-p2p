@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Controle — P2P</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body { background: #0f172a; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+
+        /* ========== 📞 TELA DE CHAMADA ENTRANTE ========== */
+        .tela-chamada-entrante {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(24px);
+            border-radius: 20px;
+            padding: 32px 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10000;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .tela-chamada-entrante.ativa {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .tela-chamada-entrante.aceitando {
+            transform: translate(-50%, -50%) scale(0.35) translate(280px, 180px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .chamada-icone {
+            font-size: 48px;
+            margin-bottom: 16px;
+            animation: chamarPulsar 1.5s ease-in-out infinite;
+        }
+
+        @keyframes chamarPulsar {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+        }
+
+        .chamada-titulo {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .chamada-quem {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .chamada-botoes {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn-aceitar {
+            background: #22c55e;
+            border: none;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-aceitar:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+
+        .btn-recusar {
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-recusar:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        /* ========== JANELA FLUTUANTE — PRINCIPAL ========== */
+        .container-principal {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease 0.2s;
+            pointer-events: none;
+        }
+
+        .container-principal.visivel {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .botao-perfil {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            color: white;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.25s ease;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .botao-perfil:hover { opacity: 0.9; transform: scale(1.05); }
+
+        .botao-perfil.falando {
+            opacity: 1;
+            animation: brilhaVerde 1.5s ease-in-out infinite;
+        }
+
+        @keyframes brilhaVerde {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); }
+            50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0), 0 0 15px rgba(74, 222, 128, 0.3); }
+        }
+
+        .notificacao-ponto {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid #0f172a;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s;
+        }
+
+        .notificacao-ponto.tem-mensagem {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .notificacao-ponto.pulsando {
+            animation: pulsaNotif 0.6s ease-in-out 3;
+        }
+
+        @keyframes pulsaNotif {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        .menu-controles {
+            position: absolute;
+            bottom: 0;
+            right: 62px;
+            width: 300px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.08);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px) scale(0.96);
+            transform-origin: bottom right;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .container-principal:hover .menu-controles,
+        .container-principal.aberto .menu-controles {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .botao-fechar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #94a3b8;
+            font-size: 13px;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .botao-fechar:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .area-videos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .video-caixa {
+            aspect-ratio: 4/3;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+        }
+
+        .video-icone { font-size: 24px; opacity: 0.4; }
+        .video-nome { font-size: 0.65rem; color: #64748b; margin-top: 4px; }
+        .video-status {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            font-size: 0.55rem;
+            background: rgba(0,0,0,0.5);
+            padding: 1px 5px;
+            border-radius: 3px;
+            color: #94a3b8;
+        }
+        .video-status.ativa { background: rgba(74, 222, 128, 0.15); color: #86efac; }
+
+        .menu-cabecalho {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .foto-dupla { display: flex; }
+        .foto-mini {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.65rem;
+            color: white;
+        }
+        .foto-mini.outro {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            margin-left: -6px;
+            border: 2px solid rgba(15, 23, 42, 0.9);
+        }
+        .nomes { flex: 1; }
+        .nome-principal { color: white; font-size: 0.8rem; font-weight: 500; }
+        .status-conexao { font-size: 0.65rem; color: #64748b; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+        .status-luz { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
+
+        .grade-botoes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .botao-controle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: rgba(255,255,255,0.03);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .botao-controle:hover { background: rgba(255,255,255,0.08); }
+        .botao-controle.ativo { background: rgba(59, 130, 246, 0.25); }
+        .botao-controle.ativo .icone { color: #93c5fd; }
+        .icone { font-size: 16px; }
+        .rotulo { font-size: 0.55rem; color: #7888a0; }
+
+        /* ✅ Área de chat ajustada (max-height: 200px) */
+        .area-chat {
+            margin-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .mensagem-item {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            padding: 5px 8px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 5px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .mensagem-item.sua {
+            background: rgba(59, 130, 246, 0.12);
+            color: #dbeafe;
+            margin-left: 15%;
+        }
+
+        /* ✅ Ajuste nas imagens enviadas pelo chat */
+        .mensagem-item img {
+            max-width: 280px;
+            width: auto;
+            height: auto;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 6px;
+            display: block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .mensagem-item img:hover {
+            transform: scale(1.02);
+        }
+
+        .entrada-chat {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            align-items: center;
+        }
+
+        .input-mensagem {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 0.75rem;
+            outline: none;
+        }
+
+        .input-mensagem:focus { border-color: rgba(59, 130, 246, 0.4); }
+
+        .botao-anexo {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 6px;
+            width: 30px;
+            height: 30px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .botao-anexo:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        .botao-enviar {
+            background: #2563eb;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .botao-enviar:hover { background: #1d4ed8; }
+
+        .input-arquivo { display: none; }
+
+        .bloco-volume {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin-top: 6px;
+        }
+        .icone-volume { font-size: 12px; }
+        .slider-volume {
+            flex: 1;
+            height: 3px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        .slider-volume::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .area-chat::-webkit-scrollbar { width: 3px; }
+        .area-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- 📞 TELA DE CHAMADA ENTRANTE -->
+    <div class="tela-chamada-entrante" id="telaChamada">
+        <div class="chamada-icone">📞</div>
+        <div class="chamada-titulo">Chamada entrante</div>
+        <div class="chamada-quem" id="quemEstaChamando">De: Amigo</div>
+        <div class="chamada-botoes">
+            <button class="btn-aceitar" id="btnAceitar">✅ Aceitar</button>
+            <button class="btn-recusar" id="btnRecusar">❌ Recusar</button>
+        </div>
+    </div>
+
+    <!-- 🟢 JANELA FLUTUANTE PRINCIPAL -->
+    <div class="container-principal" id="containerPrincipal">
+        <div class="botao-perfil" id="botaoPerfil">
+            <div>👤</div>
+            <div class="notificacao-ponto" id="pontoNotif"></div>
+        </div>
+
+        <div class="menu-controles" id="menuControles">
+            <button class="botao-fechar" id="botaoFechar">✕</button>
+            
+            <div class="area-videos">
+                <div class="video-caixa" id="videoA">
+                    <div class="video-icone">📷</div>
+                    <div class="video-nome">Sua câmera</div>
+                    <div class="video-status">Desligada</div>
+                </div>
+                <div class="video-caixa" id="videoB">
+                    <div class="video-icone">🙂</div>
+                    <div class="video-nome">Dele(a)</div>
+                    <div class="video-status">Desligada</div>
+                </div>
+            </div>
+
+            <div class="menu-cabecalho">
+                <div class="foto-dupla">
+                    <div class="foto-mini">V</div>
+                    <div class="foto-mini outro">A</div>
+                </div>
+                <div class="nomes">
+                    <div class="nome-principal">Você ↔ Amigo</div>
+                    <div class="status-conexao">
+                        <span class="status-luz"></span>
+                        Conectado
+                    </div>
+                </div>
+            </div>
+
+            <div class="grade-botoes">
+                <button class="botao-controle ativo" id="btnCamA">
+                    <span class="icone">📷</span>
+                    <span class="rotulo">Sua</span>
+                </button>
+                <button class="botao-controle" id="btnCamB">
+                    <span class="icone">📷</span>
+                    <span class="rotulo">Dele</span>
+                </button>
+                <button class="botao-controle" id="btnEspelhar">
+                    <span class="icone">🔄</span>
+                    <span class="rotulo">Espelhar</span>
+                </button>
+                <button class="botao-controle" id="btnChat">
+                    <span class="icone">💬</span>
+                    <span class="rotulo">Chat</span>
+                </button>
+                <button class="botao-controle" id="btnMicrofone">
+                    <span class="icone">🎤</span>
+                    <span class="rotulo">Mudo</span>
+                </button>
+                <button class="botao-controle" id="btnTravar">
+                    <span class="icone">🔒</span>
+                    <span class="rotulo">Travar</span>
+                </button>
+                <button class="botao-controle" id="btnCentro">
+                    <span class="icone">🎯</span>
+                    <span class="rotulo">Centro</span>
+                </button>
+                <button class="botao-controle" id="btnSair">
+                    <span class="icone">⏹</span>
+                    <span class="rotulo">Sair</span>
+                </button>
+            </div>
+
+            <!-- Volume -->
+            <div class="bloco-volume">
+                <span class="icone-volume">🔊</span>
+                <input type="range" class="slider-volume" min="0" max="100" value="75">
+            </div>
+
+            <!-- Área de CHAT com envio de imagem -->
+            <div class="area-chat" id="areaChat">
+                <div id="listaMensagens"></div>
+                <div class="entrada-chat">
+                    <label class="botao-anexo" title="Anexar imagem">
+                        📎
+                        <input type="file" id="inputArquivo" accept="image/*" class="input-arquivo">
+                    </label>
+                    <input type="text" class="input-mensagem" id="inputMensagem" placeholder="Digite sua mensagem...">
+                    <button class="botao-enviar" id="botaoEnviar">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const telaChamada = document.getElementById('telaChamada');
+        const btnAceitar = document.getElementById('btnAceitar');
+        const btnRecusar = document.getElementById('btnRecusar');
+        const containerPrincipal = document.getElementById('containerPrincipal');
+        const botaoFechar = document.getElementById('botaoFechar');
+        const botaoPerfil = document.getElementById('botaoPerfil');
+        const pontoNotif = document.getElementById('pontoNotif');
+        const btnChat = document.getElementById('btnChat');
+        const areaChat = document.getElementById('areaChat');
+        const inputMensagem = document.getElementById('inputMensagem');
+        const botaoEnviar = document.getElementById('botaoEnviar');
+        const listaMensagens = document.getElementById('listaMensagens');
+        const inputArquivo = document.getElementById('inputArquivo');
+
+        let menuAberto = false;
+        let chatVisivel = false;
+
+        // Simulação de chamada entrante após 2 segundos
+        setTimeout(() => {
+            telaChamada.classList.add('ativa');
+        }, 2000);
+
+        // Aceitar chamada
+        btnAceitar.addEventListener('click', () => {
+            telaChamada.classList.add('aceitando');
+            setTimeout(() => {
+                telaChamada.classList.remove('ativa', 'aceitando');
+                containerPrincipal.classList.add('visivel');
+                menuAberto = true;
+                containerPrincipal.classList.add('aberto');
+            }, 500);
+        });
+
+        // Recusar chamada
+        btnRecusar.addEventListener('click', () => {
+            telaChamada.classList.remove('ativa');
+        });
+
+        // Abrir/fechar menu flutuante
+        botaoPerfil.addEventListener('click', () => {
+            menuAberto = !menuAberto;
+            containerPrincipal.classList.toggle('aberto', menuAberto);
+        });
+
+        botaoFechar.addEventListener('click', () => {
+            menuAberto = false;
+            containerPrincipal.classList.remove('aberto');
+        });
+
+        // Notificações
+        function novaNotificacao() {
+            pontoNotif.classList.add('tem-mensagem', 'pulsando');
+            setTimeout(() => pontoNotif.classList.remove('pulsando'), 1800);
+        }
+
+        function limparNotificacao() {
+            pontoNotif.classList.remove('tem-mensagem');
+        }
+
+        // Chat
+        btnChat.addEventListener('click', () => {
+            chatVisivel = !chatVisivel;
+            areaChat.style.display = chatVisivel ? 'block' : 'none';
+            btnChat.classList.toggle('ativo', chatVisivel);
+            if (chatVisivel) limparNotificacao();
+        });
+
+        function adicionarMensagem(texto, sua = false) {
+            const msg = document.createElement('div');
+            msg.className = `mensagem-item ${sua ? 'sua' : ''}`;
+            msg.textContent = texto;
+            listaMensagens.appendChild(msg);
+            areaChat.scrollTop = areaChat.scrollHeight;
+        }
+
+        botaoEnviar.addEventListener('click', () => {
+            const texto = inputMensagem.value.trim();
+            if (texto) {
+                adicionarMensagem(texto, true);
+                inputMensagem.value = '';
+            }
+        });
+
+        inputMensagem.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') botaoEnviar.click();
+        });
+
+        // Enviar imagem / print pelo botão anexo
+        inputArquivo.addEventListener('change', (e) => {
+            const arquivo = e.target.files[0];
+            if (arquivo) {
+                const leitor = new FileReader();
+                leitor.onload = function(event) {
+                    const msg = document.createElement('div');
+                    msg.className = 'mensagem-item sua';
+                    msg.innerHTML = `<img src="${event.target.result}" alt="Imagem enviada">`;
+                    listaMensagens.appendChild(msg);
+                    areaChat.scrollTop = areaChat.scrollHeight;
+                };
+                leitor.readAsDataURL(arquivo);
+            }
+        });
+
+        // ✅ COLAR IMAGEM DIRETO NO CHAT (Ctrl+V)
+        document.addEventListener('paste', function (e) {
+            if (areaChat.style.display === 'none' || !areaChat.style.display) return;
+
+            const itens = (e.clipboardData || e.originalEvent.clipboardData).items;
+            
+            for (let item of itens) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const arquivo = item.getAsFile();
+                    if (!arquivo) return;
+
+                    const leitor = new FileReader();
+                    leitor.onload = function (event) {
+                        const msg = document.createElement('div');
+                        msg.className = 'mensagem-item sua';
+                        msg.innerHTML = `
+                            <span style="font-size:0.65rem; color:#94a3b8;">📸 Imagem colada</span>
+                            <img src="${event.target.result}" alt="Imagem enviada">
+                        `;
+                        listaMensagens.appendChild(msg);
+                        areaChat.scrollTop = areaChat.scrollHeight;
+                    };
+                    leitor.readAsDataURL(arquivo);
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+
+        // Controles adicionais
+        const btnCamA = document.getElementById('btnCamA');
+        const btnCamB = document.getElementById('btnCamB');
+        const btnEspelhar = document.getElementById('btnEspelhar');
+        const btnMicrofone = document.getElementById('btnMicrofone');
+        const btnTravar = document.getElementById('btnTravar');
+        const btnCentro = document.getElementById('btnCentro');
+        const btnSair = document.getElementById('btnSair');
+
+        let camALigada = true, camBLigada = false;
+        let mudo = false, espelhado = false, travado = false;
+
+        btnCamA.addEventListener('click', () => btnCamA.classList.toggle('ativo', camALigada = !camALigada));
+        btnCamB.addEventListener('click', () => btnCamB.classList.toggle('ativo', camBLigada = !camBLigada));
+        btnEspelhar.addEventListener('click', () => btnEspelhar.classList.toggle('ativo', espelhado = !espelhado));
+        
+        btnMicrofone.addEventListener('click', () => {
+            mudo = !mudo;
+            btnMicrofone.classList.toggle('ativo', mudo);
+            btnMicrofone.querySelector('.icone').textContent = mudo ? '🔇' : '🎤';
+        });
+
+        btnTravar.addEventListener('click', () => {
+            travado = !travado;
+            btnTravar.classList.toggle('ativo', travado);
+            btnTravar.querySelector('.icone').textContent = travado ? '🔒' : '🔓';
+        });
+
+        btnCentro.addEventListener('click', () => {
+            containerPrincipal.style.right = '20px';
+            containerPrincipal.style.bottom = '20px';
+        });
+
+        btnSair.addEventListener('click', () => {
+            if (confirm('Sair da chamada?')) {
+                containerPrincipal.classList.remove('visivel', 'aberto');
+                menuAberto = false;
+            }
+        });
+
+        // Arrastar a janelinha
+        let arrastando = false, deslocX, deslocY;
+        botaoPerfil.addEventListener('mousedown', (e) => {
+            if (travado) return;
+            arrastando = true;
+            deslocX = e.clientX - containerPrincipal.getBoundingClientRect().right;
+            deslocY = e.clientY - containerPrincipal.getBoundingClientRect().bottom;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!arrastando || travado) return;
+            containerPrincipal.style.right = (window.innerWidth - e.clientX - deslocX) + 'px';
+            containerPrincipal.style.bottom = (window.innerHeight - e.clientY - deslocY) + 'px';
+        });
+
+        document.addEventListener('mouseup', () => arrastando = false);
+
+        // Notificação simulada após 6 segundos
+        setTimeout(novaNotificacao, 6000);
+
+        console.log('✅ Centro de Controle completo carregado com sucesso!');
+    </script>
+</body>
+</html>
