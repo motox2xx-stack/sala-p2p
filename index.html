@@ -169,7 +169,7 @@
             left: 0;
             right: 0;
             height: auto;
-            max-height: 320px;
+            max-height: 380px;
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(20px);
             border-bottom-left-radius: 16px;
@@ -437,29 +437,6 @@
             background: #4ade80;
         }
 
-        .seletor-status {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 12px;
-        }
-
-        .btn-status {
-            flex: 1;
-            padding: 6px 4px;
-            font-size: 0.65rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s;
-            background: rgba(255,255,255,0.03);
-            color: #64748b;
-        }
-
-        .btn-status.ativo-disponivel { background: rgba(74, 222, 128, 0.15); color: #86efac; }
-        .btn-status.ativo-ausente { background: rgba(234, 179, 8, 0.15); color: #fcd34d; }
-        .btn-status.ativo-ocupado { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
-        .btn-status.ativo-naoperturbe { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
-
         .grade-botoes {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -664,6 +641,43 @@
             text-align: right;
             margin-top: 6px;
         }
+
+        /* 📋 Estilos para Status Suspenso e Contatos */
+        .opcao-status:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .item-contato {
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            transition: background 0.15s;
+        }
+        .item-contato:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .nome-contato {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bolinha-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #475569;
+        }
+        .bolinha-online {
+            background: #22c55e;
+        }
+        .estrela-favorito {
+            color: #eab308;
+            font-size: 10px;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -687,25 +701,40 @@
         </div>
     </div>
 
-    <!-- 📱 MENU DESLIZANTE DURANTE LIVE COM BUSCADOR -->
+    <!-- 📱 MENU DESLIZANTE DURANTE LIVE COM BOTÃO DE BUSCA -->
     <div class="menu-live-deslizante" id="menuLive">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="color: #94a3b8; font-size: 0.8rem;">Menu Rápido</span>
             <button style="background:none; border:none; color:#64748b; cursor:pointer; font-size:14px;" id="btnFecharMenuLive">✕</button>
         </div>
         
-        <!-- 🔍 Campo de busca de contatos/pessoas dentro do menu -->
-        <div style="padding: 0 0 10px 0;">
-            <input type="text" placeholder="🔍 Buscar contato..." style="
-                width: 100%;
+        <!-- 🔍 Botão que abre a busca -->
+        <div style="padding: 0 0 10px 0; text-align: center;">
+            <button id="btnAbrirBusca" style="
                 background: rgba(255,255,255,0.03);
                 border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 8px;
-                padding: 8px 12px;
-                color: white;
-                font-size: 0.8rem;
-                outline: none;
-            ">
+                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                color: #94a3b8;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.2s;
+            ">🔍</button>
+
+            <!-- Caixa de busca — escondida no início -->
+            <div id="caixaBusca" style="display: none; margin-top: 8px;">
+                <input type="text" id="inputBuscaLive" placeholder="Digite para buscar..." style="
+                    width: 100%;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    color: white;
+                    font-size: 0.8rem;
+                    outline: none;
+                ">
+            </div>
         </div>
 
         <div class="menu-live-conteudo">
@@ -748,12 +777,46 @@
                 <span class="status-conectado"><span class="status-luz"></span> Conectado</span>
             </div>
 
-            <!-- Status de disponibilidade -->
-            <div class="seletor-status">
-                <button class="btn-status ativo-disponivel" data-status="disponivel">✅ Disponível</button>
-                <button class="btn-status" data-status="ausente">🟡 Ausente</button>
-                <button class="btn-status" data-status="ocupado">🔴 Ocupado</button>
-                <button class="btn-status" data-status="naoperturbe">🌙 Silêncio</button>
+            <!-- ⬇️ MENU DE STATUS SUSPENSO -->
+            <div class="status-linha" style="cursor: pointer;" id="btnAbrirStatus">
+                <span>Seu status</span>
+                <span id="textoStatus" style="display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                    Disponível
+                </span>
+            </div>
+
+            <!-- 📋 MENU SUSPENSO DE STATUS -->
+            <div id="menuStatus" style="
+                position: absolute;
+                top: 145px;
+                right: 16px;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px;
+                padding: 8px 0;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 100;
+                display: none;
+                min-width: 160px;
+            ">
+                <div class="opcao-status" data-status="disponivel" style="padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                    Disponível
+                </div>
+                <div class="opcao-status" data-status="ausente" style="padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #eab308;"></span>
+                    Ausente
+                </div>
+                <div class="opcao-status" data-status="ocupado" style="padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+                    Ocupado
+                </div>
+                <div class="opcao-status" data-status="silencio" style="padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #6366f1;"></span>
+                    Modo Silêncio
+                </div>
             </div>
 
             <!-- Botões principais -->
@@ -790,6 +853,30 @@
                     <span class="icone">📤</span>
                     <span class="rotulo">Sair</span>
                 </button>
+            </div>
+
+            <!-- 📇 LISTA DE CONTATOS -->
+            <div id="secaoContatos" style="display: none; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+                <input type="text" id="buscaContatos" placeholder="🔍 Buscar contato..." style="
+                    width: 100%;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 6px;
+                    padding: 6px 10px;
+                    color: white;
+                    font-size: 0.75rem;
+                    outline: none;
+                    margin-bottom: 12px;
+                ">
+
+                <div style="font-size: 0.65rem; color: #eab308; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">⭐ Favoritos</div>
+                <div id="listaFavoritos" style="margin-bottom: 12px;"></div>
+
+                <div style="font-size: 0.65rem; color: #22c55e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">● Online</div>
+                <div id="listaOnline" style="margin-bottom: 12px;"></div>
+
+                <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Todos os Contatos</div>
+                <div id="listaTodos"></div>
             </div>
 
             <!-- Volume -->
@@ -890,20 +977,89 @@
         }
 
         // ==========================================
-        // 🟢 STATUS DE DISPONIBILIDADE
+        // 📋 MENU DE STATUS SUSPENSO
         // ==========================================
-        const botoesStatus = document.querySelectorAll('.btn-status');
-        botoesStatus.forEach(btn => {
-            btn.addEventListener('click', () => {
-                botoesStatus.forEach(b => {
-                    b.classList.remove('ativo-disponivel', 'ativo-ausente', 'ativo-ocupado', 'ativo-naoperturbe');
-                });
-                const status = btn.dataset.status;
-                if (status === 'disponivel') btn.classList.add('ativo-disponivel');
-                if (status === 'ausente') btn.classList.add('ativo-ausente');
-                if (status === 'ocupado') btn.classList.add('ativo-ocupado');
-                if (status === 'naoperturbe') btn.classList.add('ativo-naoperturbe');
+        const btnAbrirStatus = document.getElementById('btnAbrirStatus');
+        const menuStatus = document.getElementById('menuStatus');
+        const textoStatus = document.getElementById('textoStatus');
+        const opcoesStatus = document.querySelectorAll('.opcao-status');
+        let menuStatusAberto = false;
+
+        btnAbrirStatus.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuStatusAberto = !menuStatusAberto;
+            menuStatus.style.display = menuStatusAberto ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!btnAbrirStatus.contains(e.target) && !menuStatus.contains(e.target)) {
+                menuStatusAberto = false;
+                menuStatus.style.display = 'none';
+            }
+        });
+
+        opcoesStatus.forEach(opcao => {
+            opcao.addEventListener('click', () => {
+                const cor = opcao.querySelector('span').style.background;
+                const nome = opcao.textContent.trim();
+                textoStatus.innerHTML = `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${cor};"></span> ${nome}`;
+                menuStatus.style.display = 'none';
+                menuStatusAberto = false;
             });
+        });
+
+        // ==========================================
+        // 📇 LISTA DE CONTATOS
+        // ==========================================
+        const secaoContatos = document.getElementById('secaoContatos');
+        const listaFavoritos = document.getElementById('listaFavoritos');
+        const listaOnline = document.getElementById('listaOnline');
+        const listaTodos = document.getElementById('listaTodos');
+        const buscaContatos = document.getElementById('buscaContatos');
+        const btnContatos = document.getElementById('btnContatos');
+
+        const contatos = [
+            { id: 1, nome: 'Ana Silva', favorito: true, online: true },
+            { id: 2, nome: 'Beatriz Costa', favorito: false, online: true },
+            { id: 3, nome: 'Carlos Mendes', favorito: true, online: false },
+            { id: 4, nome: 'Fernanda Lima', favorito: false, online: true },
+            { id: 5, nome: 'Mariana Souza', favorito: false, online: false },
+            { id: 6, nome: 'Rafael Gomes', favorito: false, online: false },
+        ];
+
+        function renderizarContatos(filtro = '') {
+            const termo = filtro.toLowerCase();
+            const filtrados = contatos.filter(c => c.nome.toLowerCase().includes(termo));
+
+            const favoritos = filtrados.filter(c => c.favorito).sort((a, b) => a.nome.localeCompare(b.nome));
+            const online = filtrados.filter(c => !c.favorito && c.online).sort((a, b) => a.nome.localeCompare(b.nome));
+            const todos = filtrados.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            listaFavoritos.innerHTML = favoritos.length ? favoritos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum favorito</div>';
+            listaOnline.innerHTML = online.length ? online.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Ninguém online</div>';
+            listaTodos.innerHTML = todos.length ? todos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum contato</div>';
+        }
+
+        function criarItem(contato) {
+            return `
+                <div class="item-contato" data-id="${contato.id}">
+                    <div class="nome-contato">
+                        <span class="bolinha-status ${contato.online ? 'bolinha-online' : ''}"></span>
+                        <span>${contato.nome}</span>
+                        ${contato.favorito ? '<span class="estrela-favorito">★</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        btnContatos.addEventListener('click', () => {
+            const aberto = secaoContatos.style.display === 'block';
+            secaoContatos.style.display = aberto ? 'none' : 'block';
+            if (!aberto) renderizarContatos();
+        });
+
+        buscaContatos.addEventListener('input', () => {
+            renderizarContatos(buscaContatos.value);
         });
 
         // ==========================================
@@ -918,7 +1074,7 @@
 
         btnCamera.addEventListener('click', () => {
             telaLive.classList.add('ativa');
-            menuLive.classList.add('visivel'); // Abre o menu deslizante com o buscador automaticamente ao iniciar a live
+            menuLive.classList.add('visivel');
         });
 
         btnTela.addEventListener('click', () => {
@@ -938,34 +1094,43 @@
         document.getElementById('itemContatos').addEventListener('click', () => {
             menuLive.classList.remove('visivel');
             botaoPerfil.click();
+            setTimeout(() => { if(secaoContatos.style.display !== 'block') btnContatos.click(); }, 150);
         });
         document.getElementById('itemChat').addEventListener('click', () => {
             menuLive.classList.remove('visivel');
             botaoPerfil.click();
             setTimeout(() => btnChat.click(), 100);
         });
-        document.getElementById('itemAudio').addEventListener('click', () => {
-            menuLive.classList.remove('visivel');
-        });
-        document.getElementById('itemConfig').addEventListener('click', () => {
-            menuLive.classList.remove('visivel');
-        });
-        document.getElementById('itemFotoPerfil').addEventListener('click', () => {
-            menuLive.classList.remove('visivel');
-        });
+        document.getElementById('itemAudio').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
+        document.getElementById('itemConfig').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
+        document.getElementById('itemFotoPerfil').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
         document.getElementById('itemEncerrar').addEventListener('click', () => {
             telaLive.classList.remove('ativa');
             menuLive.classList.remove('visivel');
         });
 
         // ==========================================
-        // 🎤 BOTÕES DE CONTROLE
+        // 🔍 BUSCA — Abre ao clicar no ícone
         // ==========================================
-        const btnContatos = document.getElementById('btnContatos');
+        const btnAbrirBusca = document.getElementById('btnAbrirBusca');
+        const caixaBusca = document.getElementById('caixaBusca');
+        const inputBuscaLive = document.getElementById('inputBuscaLive');
+        let buscaVisivel = false;
+
+        btnAbrirBusca.addEventListener('click', () => {
+            buscaVisivel = !buscaVisivel;
+            caixaBusca.style.display = buscaVisivel ? 'block' : 'none';
+            btnAbrirBusca.style.background = buscaVisivel ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)';
+            btnAbrirBusca.style.borderColor = buscaVisivel ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.08)';
+            if (buscaVisivel) inputBuscaLive.focus();
+        });
+
+        // ==========================================
+        // 🎤 BOTÕES DE CONTROLE & CHAT
+        // ==========================================
         const btnChat = document.getElementById('btnChat');
         const btnMicrofone = document.getElementById('btnMicrofone');
         const btnTravar = document.getElementById('btnTravar');
-        const btnFoto = document.getElementById('btnFoto');
         const btnSair = document.getElementById('btnSair');
         const sliderVolume = document.getElementById('sliderVolume');
         const valorVolume = document.getElementById('valorVolume');
@@ -999,10 +1164,6 @@
             btnTravar.querySelector('.rotulo').textContent = travado ? 'Destravar' : 'Travar';
         });
 
-        btnContatos.addEventListener('click', () => {
-            alert('📇 Lista de contatos — em desenvolvimento!');
-        });
-
         btnChat.addEventListener('click', () => {
             chatVisivel = !chatVisivel;
             areaChat.style.display = chatVisivel ? 'block' : 'none';
@@ -1023,17 +1184,11 @@
             }
         });
 
-        // ==========================================
-        // 💬 CHAT — Enviar mensagens, arquivos e Ctrl+V
-        // ==========================================
         function adicionarMensagem(textoOuHtml, sua = false, ehHtml = false) {
             const msg = document.createElement('div');
             msg.className = `mensagem-item ${sua ? 'sua' : ''}`;
-            if (ehHtml) {
-                msg.innerHTML = textoOuHtml;
-            } else {
-                msg.textContent = textoOuHtml;
-            }
+            if (ehHtml) msg.innerHTML = textoOuHtml;
+            else msg.textContent = textoOuHtml;
             listaMensagens.appendChild(msg);
             areaChat.scrollTop = areaChat.scrollHeight;
         }
@@ -1091,9 +1246,6 @@
             }
         });
 
-        // ==========================================
-        // 🔍 BUSCADOR NO CHAT
-        // ==========================================
         function limparDestaquesBusca() {
             document.querySelectorAll('.mensagem-item.destaque-busca').forEach(m => {
                 m.classList.remove('destaque-busca');
@@ -1106,14 +1258,11 @@
             if (!termo) return;
             
             const mensagens = document.querySelectorAll('.mensagem-item');
-            let encontrou = 0;
             mensagens.forEach(msg => {
                 if (msg.textContent.toLowerCase().includes(termo)) {
                     msg.classList.add('destaque-busca');
-                    encontrou++;
                 }
             });
-            console.log(`🔍 Encontrado: ${encontrou} mensagem(ns)`);
         });
 
         btnLimparBusca.addEventListener('click', () => {
@@ -1121,9 +1270,6 @@
             limparDestaquesBusca();
         });
 
-        // ==========================================
-        // 🎤 SIMULAÇÃO: QUEM ESTÁ FALANDO
-        // ==========================================
         setInterval(() => {
             if (!emChamada) return;
             falandoSouEu = !falandoSouEu;
@@ -1131,15 +1277,12 @@
             fotoEle.classList.toggle('falando', !falandoSouEu);
         }, 4000);
 
-        // ==========================================
-        // 🔔 SIMULAÇÃO INICIAL
-        // ==========================================
         setTimeout(() => {
             telaChamada.classList.add('ativa');
             novaNotificacao();
         }, 2000);
 
-        console.log('%c✅ Guardian Shield — Atualizado com Buscador no Menu da Live!', 'color: #10b981; font-weight: bold;');
+        console.log('%c✨ Guardian Shield carregado com sucesso!', 'color: #10b981; font-weight: bold;');
     </script>
 </body>
 </html>
