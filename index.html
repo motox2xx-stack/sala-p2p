@@ -210,6 +210,72 @@
             background: rgba(255,255,255,0.08);
         }
 
+        /* ====== 🔍 BOTÃO DE BUSCA — ESTADO ABERTO/FECHADO ====== */
+        .btn-abrir-busca {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            color: #94a3b8;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-abrir-busca.aberto {
+            background: rgba(59, 130, 246, 0.25);
+            border-color: rgba(96, 165, 250, 0.5);
+            color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .caixa-busca-input {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .caixa-busca-input:focus {
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .container-busca {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-fechar-busca {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 14px;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .btn-fechar-busca:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+        }
+
         /* ========== 🟢 JANELA FLUTUANTE — PRINCIPAL & ARRASTÁVEL ========== */
         .janela-flutuante {
             position: fixed;
@@ -488,7 +554,7 @@
             border: 1px solid transparent !important;
         }
 
-        /* Barra de volume com ícone mudo em 0% */
+        /* Barra de volume — ícone fixo à esquerda */
         .bloco-volume {
             display: flex;
             align-items: center;
@@ -503,19 +569,6 @@
             display: flex;
             align-items: center;
             flex: 1;
-        }
-        .volume-mudo-icone {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        .volume-zero .volume-mudo-icone {
-            opacity: 1;
         }
         input[type="range"] {
             width: 100%;
@@ -540,26 +593,57 @@
             margin-top: 10px;
             border-top: 1px solid rgba(255,255,255,0.06);
             padding-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
             display: none;
+            flex-direction: column;
+        }
+
+        /* Só a lista de mensagens rola. Arquivo | caixa | enviar ficam sempre no lugar */
+        #listaMensagens {
+            max-height: 150px;
+            overflow-y: auto;
+            padding-right: 2px;
         }
 
         .busca-chat {
             display: flex;
-            gap: 6px;
+            align-items: center;
             margin-bottom: 8px;
         }
 
-        .input-busca {
-            flex: 1;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+        .btn-lupa-chat {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 15px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
             border-radius: 6px;
-            padding: 4px 8px;
+            padding: 0;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .btn-lupa-chat:hover { background: rgba(255,255,255,0.08); }
+
+        .input-busca {
+            flex: 0 1 0%;
+            min-width: 0;
+            opacity: 0;
+            transform: translateY(-5px);
+            pointer-events: none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 4px 0;
             color: white;
             font-size: 0.7rem;
             outline: none;
+            transition: all 0.25s ease;
         }
 
         .input-busca:focus { border-color: rgba(59, 130, 246, 0.4); }
@@ -570,17 +654,115 @@
             color: #64748b;
             cursor: pointer;
             font-size: 12px;
+            width: 0;
+            height: 24px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-limpar-busca:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+        }
+
+        /* Busca aberta: lupa some, caixinha e ✕ aparecem com animação */
+        .busca-chat.aberta .btn-lupa-chat { width: 0; opacity: 0; pointer-events: none; }
+        .busca-chat.aberta .input-busca {
+            flex: 1 1 0%;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            padding: 4px 8px;
+            margin-right: 6px;
+            border-color: rgba(255,255,255,0.08);
+        }
+        .busca-chat.aberta .input-busca:focus { border-color: rgba(59, 130, 246, 0.4); }
+        .busca-chat.aberta .btn-limpar-busca {
+            width: 24px;
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
         }
 
         .mensagem-item {
             font-size: 0.75rem;
             color: #cbd5e1;
-            padding: 6px 10px;
+            padding: 6px 26px 6px 10px;
             background: rgba(255,255,255,0.02);
             border-radius: 6px;
             margin-bottom: 5px;
             line-height: 1.4;
+            position: relative;
+            transition: background 0.3s ease;
         }
+
+        /* Mensagem que acabou de chegar: caixa cinza fica verde e volta ao normal */
+        .mensagem-item.nova-recebida {
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        /* Botão copiar dentro de cada caixinha de texto */
+        .btn-copiar {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            border: none;
+            background: none;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+            opacity: 0.4;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .btn-copiar:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+
+        /* Confirmação: ✓ enviada | ✓✓ entregue | ✓✓ azul lida */
+        .confirma {
+            font-size: 10px;
+            opacity: 0.5;
+            margin-left: 6px;
+            white-space: nowrap;
+        }
+
+        .confirma.lida { color: #60a5fa; opacity: 1; }
+
+        /* Espaço reservado para "digitando..." (não empurra o layout) */
+        .status-digitando {
+            height: 14px;
+            margin-top: 4px;
+            font-size: 0.65rem;
+            color: #94a3b8;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .status-digitando.visivel { opacity: 1; }
+
+        /* Favoritos na lista de contatos */
+        .btn-favorito {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #64748b;
+            opacity: 0.6;
+            padding: 0 2px;
+            transition: all 0.2s;
+        }
+
+        .btn-favorito:hover { opacity: 1; }
+        .btn-favorito.favoritado { color: #eab308; opacity: 1; }
 
         .mensagem-item.sua {
             background: rgba(59, 130, 246, 0.12);
@@ -676,8 +858,20 @@
 
         .input-arquivo { display: none; }
 
-        .area-chat::-webkit-scrollbar { width: 4px; }
-        .area-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        #listaMensagens::-webkit-scrollbar,
+        .lista-contatos::-webkit-scrollbar { width: 4px; }
+        #listaMensagens::-webkit-scrollbar-track,
+        .lista-contatos::-webkit-scrollbar-track { background: transparent; }
+        #listaMensagens::-webkit-scrollbar-thumb,
+        .lista-contatos::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* Lista de contatos com barra de rolagem */
+        .lista-contatos {
+            max-height: 220px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 4px;
+        }
 
         .relogio-digital {
             font-size: 0.7rem;
@@ -745,39 +939,19 @@
         </div>
     </div>
 
-    <!-- 📱 MENU DESLIZANTE DURANTE LIVE COM BOTÃO DE BUSCA -->
+    <!-- 📱 MENU DESLIZANTE DURANTE LIVE COM BOTÃO DE BUSCA ATUALIZADO -->
     <div class="menu-live-deslizante" id="menuLive">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="color: #94a3b8; font-size: 0.8rem;">Menu Rápido</span>
             <button style="background:none; border:none; color:#64748b; cursor:pointer; font-size:14px;" id="btnFecharMenuLive">✕</button>
         </div>
         
-        <!-- 🔍 Botão que abre a busca -->
-        <div style="padding: 0 0 10px 0; text-align: center;">
-            <button id="btnAbrirBusca" style="
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 50%;
-                width: 36px;
-                height: 36px;
-                color: #94a3b8;
-                font-size: 16px;
-                cursor: pointer;
-                transition: all 0.2s;
-            ">🔍</button>
-
-            <!-- Caixa de busca — escondida no início -->
-            <div id="caixaBusca" style="display: none; margin-top: 8px;">
-                <input type="text" id="inputBuscaLive" placeholder="Digite para buscar..." style="
-                    width: 100%;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    color: white;
-                    font-size: 0.8rem;
-                    outline: none;
-                ">
+        <!-- 🔍 Busca — Lupa + Caixinha + X -->
+        <div style="padding: 0 0 10px 0;">
+            <div id="areaBuscaSimples" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                <button id="btnAbrirBusca" class="btn-abrir-busca">🔍</button>
+                <input type="text" id="inputBuscaLive" class="caixa-busca-input" placeholder="" style="display:none;">
+                <button id="btnFecharBusca" class="btn-fechar-busca" style="display:none;">✕</button>
             </div>
         </div>
 
@@ -818,7 +992,10 @@
 
             <!-- Status de conexão -->
             <div class="status-linha">
-                <span>Você ↔ Amigo</span>
+                <span style="display:flex; align-items:center; gap:6px;">
+                    <button id="btnPerfilInfo" title="Meu perfil" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0;">👤</button>
+                    <span>Você ↔ Amigo</span>
+                </span>
                 <span class="status-conectado"><span class="status-luz"></span> Conectado</span>
             </div>
 
@@ -864,9 +1041,32 @@
                 </div>
             </div>
 
-            <!-- Botões principais -->
+            <!-- 👤 MENU DE INFORMAÇÕES DO USUÁRIO -->
+            <div id="menuPerfil" style="
+                position: absolute;
+                top: 52px;
+                left: 16px;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px;
+                padding: 14px 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 100;
+                display: none;
+                min-width: 210px;
+                font-size: 0.8rem;
+            ">
+                <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Meu perfil</div>
+                <div style="margin-bottom: 6px;"><span style="color:#94a3b8;">Nome:</span> <span id="perfilNome">Usuário</span></div>
+                <div style="margin-bottom: 6px;"><span style="color:#94a3b8;">ID:</span> <span id="perfilId">---</span></div>
+                <div style="margin-bottom: 6px; display:flex; align-items:center; gap:6px;"><span style="color:#94a3b8;">Status:</span> <span id="perfilStatus" style="display:flex; align-items:center; gap:6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span> Disponível</span></div>
+                <div><span style="color:#94a3b8;">Conectado com:</span> Amigo</div>
+            </div>
+
+            <!-- Botões principais (todos com estado ativo/inativo igual ao Chat) -->
             <div class="grade-botoes">
-                <button class="botao-controle" id="btnContatos">
+                <button class="botao-controle botao-inativo" id="btnContatos">
                     <span class="icone">📇</span>
                     <span class="rotulo">Contatos</span>
                 </button>
@@ -878,23 +1078,23 @@
                     <span class="icone">🎤</span>
                     <span class="rotulo">Mudo</span>
                 </button>
-                <button class="botao-controle" id="btnTravar" data-acao="travar">
+                <button class="botao-controle botao-inativo" id="btnTravar" data-acao="travar">
                     <span class="icone">🔒</span>
                     <span class="rotulo">Travar</span>
                 </button>
-                <button class="botao-controle" id="btnCamera">
+                <button class="botao-controle botao-inativo" id="btnCamera">
                     <span class="icone">📷</span>
                     <span class="rotulo">Câmera</span>
                 </button>
-                <button class="botao-controle" id="btnTela">
+                <button class="botao-controle botao-inativo" id="btnTela">
                     <span class="icone">🖥️</span>
                     <span class="rotulo">Tela</span>
                 </button>
-                <button class="botao-controle" id="btnFoto">
+                <button class="botao-controle botao-inativo" id="btnFoto">
                     <span class="icone">📸</span>
                     <span class="rotulo">Foto</span>
                 </button>
-                <button class="botao-controle" id="btnSair">
+                <button class="botao-controle botao-inativo" id="btnSair">
                     <span class="icone">📤</span>
                     <span class="rotulo">Sair</span>
                 </button>
@@ -914,6 +1114,7 @@
                     margin-bottom: 12px;
                 ">
 
+                <div class="lista-contatos" id="rolagemContatos">
                 <div style="font-size: 0.65rem; color: #eab308; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">⭐ Favoritos</div>
                 <div id="listaFavoritos" style="margin-bottom: 12px;"></div>
 
@@ -922,16 +1123,16 @@
 
                 <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Todos os Contatos</div>
                 <div id="listaTodos"></div>
+                </div>
             </div>
 
-            <!-- Volume com ícone Mudo em 0% -->
+            <!-- 🔊 Volume — ícone fixo à esquerda: 🔇 em 0% | 🔊 de 1% a 100% -->
             <div class="bloco-volume">
-                <span style="font-size:12px; opacity:0.7;">🔊</span>
-                <div class="volume-container" id="volumeContainer">
+                <span id="iconeVolume" style="font-size:12px; opacity:0.7; min-width:16px; text-align:center;">🔊</span>
+                <div class="volume-container">
                     <input type="range" id="volumeAudio" min="0" max="100" value="75" style="margin:0 8px;">
-                    <span class="volume-mudo-icone" id="iconeMudo">🔇</span>
                 </div>
-                <span style="font-size:12px; opacity:0.7;" id="valorVolume">75%</span>
+                <span style="font-size:12px; opacity:0.7; min-width:34px; text-align:right;" id="valorVolume">75%</span>
             </div>
 
             <!-- Relógio digital -->
@@ -939,11 +1140,14 @@
 
             <!-- Área de CHAT -->
             <div class="area-chat" id="areaChat">
+                <!-- 🔍 Busca do chat: só lupa fechada | caixinha + ✕ aberta -->
                 <div class="busca-chat">
-                    <input type="text" class="input-busca" id="inputBusca" placeholder="🔍 Buscar palavra...">
-                    <button class="btn-limpar-busca" id="btnLimparBusca">✕</button>
+                    <button class="btn-lupa-chat" id="btnLupaChat" title="Buscar na conversa">🔍</button>
+                    <input type="text" class="input-busca" id="inputBusca" placeholder="Buscar palavra... (Enter = próxima)">
+                    <button class="btn-limpar-busca" id="btnLimparBusca" title="Fechar busca (Esc)">✕</button>
                 </div>
                 <div id="listaMensagens"></div>
+                <div class="status-digitando" id="statusDigitando"></div>
                 <div class="entrada-chat">
                     <label class="botao-anexo" title="Anexar imagem">
                         📎
@@ -957,6 +1161,16 @@
     </div>
 
     <script>
+        // ==========================================
+        // 🎯 FUNÇÃO ÚNICA — BOTÃO ATIVO / INATIVO (igual ao Chat)
+        // ==========================================
+        function definirAtivo(btn, ativo) {
+            if (!btn) return;
+            btn.classList.toggle('ativo', ativo);
+            btn.classList.toggle('botao-ativo', ativo);
+            btn.classList.toggle('botao-inativo', !ativo);
+        }
+
         // ==========================================
         // 🕐 RELÓGIO DIGITAL
         // ==========================================
@@ -1024,27 +1238,20 @@
         }
 
         // ==========================================
-        // 🔊 BARRA DE VOLUME — MOSTRAR MUDO EM 0%
+        // 🔊 VOLUME — 🔇 em 0% | 🔊 de 1% a 100% (ícone fixo à esquerda)
         // ==========================================
         const volumeEl = document.getElementById('volumeAudio');
-        const volumeContainer = document.getElementById('volumeContainer');
         const valorVolume = document.getElementById('valorVolume');
-        
+        const iconeVolume = document.getElementById('iconeVolume');
+
         function atualizarIconeVolume() {
-            if (!volumeEl || !volumeContainer) return;
             const val = parseInt(volumeEl.value);
             valorVolume.textContent = val + '%';
-            if (val === 0) {
-                volumeContainer.classList.add('volume-zero');
-            } else {
-                volumeContainer.classList.remove('volume-zero');
-            }
+            iconeVolume.textContent = val === 0 ? '🔇' : '🔊';
         }
-        
-        if (volumeEl) {
-            volumeEl.addEventListener('input', atualizarIconeVolume);
-            atualizarIconeVolume();
-        }
+
+        volumeEl.addEventListener('input', atualizarIconeVolume);
+        atualizarIconeVolume();
 
         // ==========================================
         // 🪟 JANELA FLUTUANTE — ARRASTAR + TRAVAR
@@ -1064,6 +1271,7 @@
                 janela.classList.remove('travada');
                 if (btnTravar) btnTravar.querySelector('.icone').textContent = '🔒';
             }
+            definirAtivo(btnTravar, janelaTravada);
         }
 
         function iniciarArrasto(e) {
@@ -1140,6 +1348,8 @@
                 const cor = opcao.querySelector('span').style.background;
                 const nome = opcao.textContent.trim();
                 textoStatus.innerHTML = `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${cor};"></span> ${nome}`;
+                const perfilStatusEl = document.getElementById('perfilStatus');
+                if (perfilStatusEl) perfilStatusEl.innerHTML = textoStatus.innerHTML;
                 menuStatus.style.display = 'none';
                 menuStatusAberto = false;
             });
@@ -1164,34 +1374,70 @@
             { id: 6, nome: 'Rafael Gomes', favorito: false, online: false },
         ];
 
+        // ⭐ Favoritos salvos no localStorage
+        const CHAVE_FAVORITOS = 'guardian_shield_favoritos';
+
+        function carregarFavoritos() {
+            try {
+                const salvo = localStorage.getItem(CHAVE_FAVORITOS);
+                if (salvo) return JSON.parse(salvo);
+            } catch (e) {}
+            return contatos.filter(c => c.favorito).map(c => c.id);
+        }
+
+        let favoritosIds = carregarFavoritos();
+
+        function ehFavorito(id) {
+            return favoritosIds.includes(id);
+        }
+
+        function alternarFavorito(id) {
+            if (ehFavorito(id)) favoritosIds = favoritosIds.filter(f => f !== id);
+            else favoritosIds.push(id);
+            try { localStorage.setItem(CHAVE_FAVORITOS, JSON.stringify(favoritosIds)); } catch (e) {}
+            renderizarContatos(buscaContatos.value);
+        }
+
         function renderizarContatos(filtro = '') {
+            const rolagem = document.getElementById('rolagemContatos');
+            const posicao = rolagem ? rolagem.scrollTop : 0;
             const termo = filtro.toLowerCase();
             const filtrados = contatos.filter(c => c.nome.toLowerCase().includes(termo));
 
-            const favoritos = filtrados.filter(c => c.favorito).sort((a, b) => a.nome.localeCompare(b.nome));
-            const online = filtrados.filter(c => !c.favorito && c.online).sort((a, b) => a.nome.localeCompare(b.nome));
-            const todos = filtrados.sort((a, b) => a.nome.localeCompare(b.nome));
+            const favoritos = filtrados.filter(c => ehFavorito(c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
+            const online = filtrados.filter(c => !ehFavorito(c.id) && c.online).sort((a, b) => a.nome.localeCompare(b.nome));
+            const todos = filtrados.slice().sort((a, b) => a.nome.localeCompare(b.nome));
 
             listaFavoritos.innerHTML = favoritos.length ? favoritos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum favorito</div>';
             listaOnline.innerHTML = online.length ? online.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Ninguém online</div>';
             listaTodos.innerHTML = todos.length ? todos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum contato</div>';
+            if (rolagem) rolagem.scrollTop = posicao;
         }
 
         function criarItem(contato) {
+            const fav = ehFavorito(contato.id);
             return `
                 <div class="item-contato" data-id="${contato.id}">
                     <div class="nome-contato">
                         <span class="bolinha-status ${contato.online ? 'bolinha-online' : ''}"></span>
                         <span>${contato.nome}</span>
-                        ${contato.favorito ? '<span class="estrela-favorito">★</span>' : ''}
                     </div>
+                    <button class="btn-favorito ${fav ? 'favoritado' : ''}" data-id="${contato.id}" title="${fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">${fav ? '★' : '☆'}</button>
                 </div>
             `;
         }
 
+        secaoContatos.addEventListener('click', (e) => {
+            const estrela = e.target.closest('.btn-favorito');
+            if (!estrela) return;
+            e.stopPropagation();
+            alternarFavorito(Number(estrela.dataset.id));
+        });
+
         btnContatos.addEventListener('click', () => {
             const aberto = secaoContatos.style.display === 'block';
             secaoContatos.style.display = aberto ? 'none' : 'block';
+            definirAtivo(btnContatos, !aberto);
             if (!aberto) renderizarContatos();
         });
 
@@ -1206,23 +1452,38 @@
         const btnFecharLive = document.getElementById('btnFecharLive');
         const btnCamera = document.getElementById('btnCamera');
         const btnTela = document.getElementById('btnTela');
+        const btnFoto = document.getElementById('btnFoto');
         const menuLive = document.getElementById('menuLive');
         const btnFecharMenuLive = document.getElementById('btnFecharMenuLive');
 
-        btnCamera.addEventListener('click', () => {
+        function abrirLive(btnOrigem) {
             telaLive.classList.add('ativa');
             menuLive.classList.add('visivel');
+            definirAtivo(btnOrigem, true);
+        }
+
+        function fecharLive() {
+            telaLive.classList.remove('ativa');
+            menuLive.classList.remove('visivel');
+            definirAtivo(btnCamera, false);
+            definirAtivo(btnTela, false);
+        }
+
+        btnCamera.addEventListener('click', () => {
+            if (btnCamera.classList.contains('ativo')) fecharLive();
+            else abrirLive(btnCamera);
         });
 
         btnTela.addEventListener('click', () => {
-            telaLive.classList.add('ativa');
-            menuLive.classList.add('visivel');
+            if (btnTela.classList.contains('ativo')) fecharLive();
+            else abrirLive(btnTela);
         });
 
-        btnFecharLive.addEventListener('click', () => {
-            telaLive.classList.remove('ativa');
-            menuLive.classList.remove('visivel');
+        btnFoto.addEventListener('click', () => {
+            definirAtivo(btnFoto, !btnFoto.classList.contains('ativo'));
         });
+
+        btnFecharLive.addEventListener('click', fecharLive);
 
         btnFecharMenuLive.addEventListener('click', () => {
             menuLive.classList.remove('visivel');
@@ -1240,26 +1501,47 @@
         });
         document.getElementById('itemAudio').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
         document.getElementById('itemConfig').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
-        document.getElementById('itemFotoPerfil').addEventListener('click', () => { menuLive.classList.remove('visivel'); });
-        document.getElementById('itemEncerrar').addEventListener('click', () => {
-            telaLive.classList.remove('ativa');
+        document.getElementById('itemFotoPerfil').addEventListener('click', () => {
             menuLive.classList.remove('visivel');
+            if (!menuAberto) botaoPerfil.click();
+            setTimeout(() => alternarPerfil(true), 150);
         });
+        document.getElementById('itemEncerrar').addEventListener('click', fecharLive);
 
         // ==========================================
-        // 🔍 BUSCA — Abre ao clicar no ícone
+        // 🔍 BUSCA (MENU DA LIVE) — Lupa | caixinha + X
         // ==========================================
         const btnAbrirBusca = document.getElementById('btnAbrirBusca');
-        const caixaBusca = document.getElementById('caixaBusca');
         const inputBuscaLive = document.getElementById('inputBuscaLive');
+        const btnFecharBusca = document.getElementById('btnFecharBusca');
         let buscaVisivel = false;
 
-        btnAbrirBusca.addEventListener('click', () => {
-            buscaVisivel = !buscaVisivel;
-            caixaBusca.style.display = buscaVisivel ? 'block' : 'none';
-            btnAbrirBusca.style.background = buscaVisivel ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.03)';
-            btnAbrirBusca.style.borderColor = buscaVisivel ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.08)';
-            if (buscaVisivel) inputBuscaLive.focus();
+        function abrirBusca() {
+            buscaVisivel = true;
+            btnAbrirBusca.classList.add('aberto');
+            btnAbrirBusca.style.display = 'none';
+            inputBuscaLive.style.display = 'block';
+            inputBuscaLive.style.background = 'rgba(255,255,255,0.04)';
+            inputBuscaLive.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+            inputBuscaLive.placeholder = 'Digite para buscar...';
+            inputBuscaLive.focus();
+            btnFecharBusca.style.display = 'flex';
+        }
+
+        function fecharBusca() {
+            buscaVisivel = false;
+            btnAbrirBusca.classList.remove('aberto');
+            btnAbrirBusca.style.display = 'flex';
+            inputBuscaLive.style.display = 'none';
+            inputBuscaLive.value = '';
+            btnFecharBusca.style.display = 'none';
+        }
+
+        btnAbrirBusca.addEventListener('click', abrirBusca);
+        btnFecharBusca.addEventListener('click', fecharBusca);
+
+        inputBuscaLive.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') fecharBusca();
         });
 
         // ==========================================
@@ -1275,6 +1557,7 @@
         const inputArquivo = document.getElementById('inputArquivo');
         const inputBusca = document.getElementById('inputBusca');
         const btnLimparBusca = document.getElementById('btnLimparBusca');
+        const btnLupaChat = document.getElementById('btnLupaChat');
 
         let chatVisivel = false;
         let mudo = false;
@@ -1282,43 +1565,130 @@
 
         btnMicrofone.addEventListener('click', () => {
             mudo = !mudo;
-            btnMicrofone.classList.toggle('ativo', mudo);
-            btnMicrofone.classList.toggle('botao-ativo', mudo);
-            btnMicrofone.classList.toggle('botao-inativo', !mudo);
+            definirAtivo(btnMicrofone, mudo);
             btnMicrofone.querySelector('.icone').textContent = mudo ? '🔇' : '🎤';
         });
 
         btnChat.addEventListener('click', () => {
             chatVisivel = !chatVisivel;
-            areaChat.style.display = chatVisivel ? 'block' : 'none';
-            btnChat.classList.toggle('ativo', chatVisivel);
-            btnChat.classList.toggle('botao-ativo', chatVisivel);
-            btnChat.classList.toggle('botao-inativo', !chatVisivel);
+            areaChat.style.display = chatVisivel ? 'flex' : 'none';
+            definirAtivo(btnChat, chatVisivel);
             if (chatVisivel) limparNotificacao();
-            else inputBusca.value = '';
-            limparDestaquesBusca();
+            else fecharBuscaChat();
         });
 
         btnSair.addEventListener('click', () => {
-            if (confirm('Sair da chamada?')) {
+            definirAtivo(btnSair, true);
+            const confirmou = confirm('Sair da chamada?');
+            definirAtivo(btnSair, false);
+            if (confirmou) {
                 containerPrincipal.classList.remove('visivel', 'aberto');
                 menuAberto = false;
                 emChamada = false;
                 areaFotosChamada.style.display = 'none';
-                telaLive.classList.remove('ativa');
-                menuLive.classList.remove('visivel');
+                fecharLive();
             }
         });
 
-        function adicionarMensagemNaTela(textoOuHtml, sua = false, ehHtml = false) {
-            const msg = document.createElement('div');
-            msg.className = `mensagem-item ${sua ? 'sua' : ''}`;
-            if (ehHtml) msg.innerHTML = textoOuHtml;
-            else msg.textContent = textoOuHtml;
-            listaMensagens.appendChild(msg);
-            areaChat.scrollTop = areaChat.scrollHeight;
+        const NOME_CONTATO = 'Amigo';
+        let contadorMsg = 0;
 
+        // ✓ enviada | ✓✓ entregue | ✓✓ azul = lida
+        function definirConfirmacao(msg, status) {
+            const c = msg.querySelector('.confirma');
+            if (!c) return;
+            c.textContent = status === 'enviada' ? '✓' : '✓✓';
+            c.classList.toggle('lida', status === 'lida');
+        }
+
+        // 📋 Copiar texto da caixinha (com alternativa para quando o navegador bloqueia)
+        function copiarTexto(texto, btn) {
+            const ok = () => {
+                btn.textContent = '✓';
+                setTimeout(() => btn.textContent = '📋', 1500);
+            };
+            const alternativa = () => {
+                const t = document.createElement('textarea');
+                t.value = texto;
+                t.style.position = 'fixed';
+                t.style.opacity = '0';
+                document.body.appendChild(t);
+                t.select();
+                try { document.execCommand('copy'); ok(); } catch (e) {}
+                document.body.removeChild(t);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(ok).catch(alternativa);
+            } else {
+                alternativa();
+            }
+        }
+
+        function criarElementoMensagem(texto, sua, ehHtml, status, nova) {
+            const msg = document.createElement('div');
+            msg.className = 'mensagem-item' + (sua ? ' sua' : '');
+            msg.dataset.msg = ++contadorMsg;
+
+            const corpo = document.createElement('span');
+            corpo.className = 'texto-mensagem';
+            if (ehHtml) corpo.innerHTML = texto;
+            else corpo.textContent = texto;
+            msg.appendChild(corpo);
+
+            if (!ehHtml) {
+                const btnCopiar = document.createElement('button');
+                btnCopiar.className = 'btn-copiar';
+                btnCopiar.title = 'Copiar texto';
+                btnCopiar.textContent = '📋';
+                btnCopiar.addEventListener('click', () => copiarTexto(texto, btnCopiar));
+                msg.appendChild(btnCopiar);
+            }
+
+            if (sua) {
+                const c = document.createElement('span');
+                c.className = 'confirma';
+                msg.appendChild(c);
+                definirConfirmacao(msg, status || 'enviada');
+            }
+
+            if (nova && !sua) {
+                msg.classList.add('nova-recebida');
+                setTimeout(() => msg.classList.remove('nova-recebida'), 1500);
+            }
+            return msg;
+        }
+
+        function adicionarMensagemNaTela(textoOuHtml, sua = false, ehHtml = false, nova = false) {
+            const msg = criarElementoMensagem(textoOuHtml, sua, ehHtml, 'enviada', nova);
+            listaMensagens.appendChild(msg);
+            listaMensagens.scrollTop = listaMensagens.scrollHeight;
             salvarMensagem(textoOuHtml, sua, ehHtml);
+
+            // Demonstração: entregue e depois lida. Troque por eventos reais do P2P.
+            if (sua) {
+                setTimeout(() => definirConfirmacao(msg, 'entregue'), 600);
+                setTimeout(() => definirConfirmacao(msg, 'lida'), 1500);
+            }
+            return msg;
+        }
+
+        // ✍️ "Fulano está digitando..."
+        const statusDigitando = document.getElementById('statusDigitando');
+
+        function mostrarDigitando(nome) {
+            statusDigitando.textContent = `${nome} está digitando...`;
+            statusDigitando.classList.add('visivel');
+        }
+
+        function esconderDigitando() {
+            statusDigitando.classList.remove('visivel');
+        }
+
+        // 📥 Use esta função quando chegar uma mensagem de verdade
+        function receberMensagem(texto) {
+            esconderDigitando();
+            adicionarMensagemNaTela(texto, false, false, true);
+            novaNotificacao();
         }
 
         botaoEnviar.addEventListener('click', () => {
@@ -1326,10 +1696,9 @@
             if (texto) {
                 adicionarMensagemNaTela(texto, true, false);
                 inputMensagem.value = '';
-                setTimeout(() => {
-                    adicionarMensagemNaTela('Mensagem recebida! 👋', false, false);
-                    novaNotificacao();
-                }, 800);
+                // Resposta de demonstração
+                setTimeout(() => mostrarDigitando(NOME_CONTATO), 1500);
+                setTimeout(() => receberMensagem('Beleza!'), 3200);
             }
         });
 
@@ -1374,28 +1743,97 @@
             }
         });
 
+        // ==========================================
+        // 🔍 BUSCA NO CHAT — só lupa fechada | caixinha + ✕ aberta
+        // ==========================================
+        // ==========================================
+        // 🔍 BUSCA NO CHAT — animada | Enter = próxima | Esc = fechar
+        // ==========================================
+        const caixaBuscaChat = document.querySelector('.busca-chat');
+        let indiceBusca = -1;
+
         function limparDestaquesBusca() {
             document.querySelectorAll('.mensagem-item.destaque-busca').forEach(m => {
                 m.classList.remove('destaque-busca');
             });
+            indiceBusca = -1;
         }
+
+        function abrirBuscaChat() {
+            caixaBuscaChat.classList.add('aberta');
+            inputBusca.focus();
+        }
+
+        function fecharBuscaChat() {
+            caixaBuscaChat.classList.remove('aberta');
+            inputBusca.value = '';
+            inputBusca.blur();
+            limparDestaquesBusca();
+        }
+
+        btnLupaChat.addEventListener('click', abrirBuscaChat);
+        btnLimparBusca.addEventListener('click', fecharBuscaChat);
+
+        inputBusca.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                fecharBuscaChat();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const achadas = document.querySelectorAll('.mensagem-item.destaque-busca');
+                if (!achadas.length) return;
+                indiceBusca = (indiceBusca + 1) % achadas.length;
+                achadas[indiceBusca].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        });
 
         inputBusca.addEventListener('input', () => {
             const termo = inputBusca.value.trim().toLowerCase();
             limparDestaquesBusca();
             if (!termo) return;
-            
-            const mensagens = document.querySelectorAll('.mensagem-item');
-            mensagens.forEach(msg => {
-                if (msg.textContent.toLowerCase().includes(termo)) {
+
+            document.querySelectorAll('.mensagem-item').forEach(msg => {
+                const corpo = msg.querySelector('.texto-mensagem');
+                if (corpo && corpo.textContent.toLowerCase().includes(termo)) {
                     msg.classList.add('destaque-busca');
                 }
             });
         });
 
-        btnLimparBusca.addEventListener('click', () => {
-            inputBusca.value = '';
-            limparDestaquesBusca();
+        // ==========================================
+        // 👤 MENU DE INFORMAÇÕES DO USUÁRIO
+        // ==========================================
+        const btnPerfilInfo = document.getElementById('btnPerfilInfo');
+        const menuPerfil = document.getElementById('menuPerfil');
+
+        function obterIdUsuario() {
+            try {
+                let id = localStorage.getItem('guardian_shield_id');
+                if (!id) {
+                    id = 'GS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+                    localStorage.setItem('guardian_shield_id', id);
+                }
+                return id;
+            } catch (e) {
+                return 'GS-000000';
+            }
+        }
+
+        document.getElementById('perfilId').textContent = obterIdUsuario();
+
+        function alternarPerfil(abrir) {
+            const mostrar = typeof abrir === 'boolean' ? abrir : menuPerfil.style.display !== 'block';
+            menuPerfil.style.display = mostrar ? 'block' : 'none';
+        }
+
+        btnPerfilInfo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            alternarPerfil();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!menuPerfil.contains(e.target) && e.target !== btnPerfilInfo) {
+                menuPerfil.style.display = 'none';
+            }
         });
 
         setInterval(() => {
@@ -1420,13 +1858,10 @@
             if (salvo) {
                 const mensagens = JSON.parse(salvo);
                 mensagens.forEach(msg => {
-                    const m = document.createElement('div');
-                    m.className = `mensagem-item ${msg.sua ? 'sua' : ''}`;
-                    if (msg.ehHtml) m.innerHTML = msg.texto;
-                    else m.textContent = msg.texto;
-                    listaMensagens.appendChild(m);
+                    listaMensagens.appendChild(criarElementoMensagem(msg.texto, msg.sua, msg.ehHtml, 'lida', false));
                 });
-                areaChat.scrollTop = areaChat.scrollHeight;
+                listaMensagens.scrollTop = listaMensagens.scrollHeight;
+                console.log(`✅ ${mensagens.length} mensagens carregadas!`);
             }
         }
 
@@ -1438,7 +1873,7 @@
 
         document.addEventListener('DOMContentLoaded', carregarHistorico);
 
-        console.log('%c✨ Guardian Shield Completo carregado com sucesso!', 'color: #10b981; font-weight: bold;');
+        console.log('%c✨ Guardian Shield Completo com Busca Atualizada!', 'color: #10b981; font-weight: bold;');
     </script>
 </body>
 </html>
