@@ -210,8 +210,8 @@
             background: rgba(255,255,255,0.08);
         }
 
-        /* ========== 🟢 JANELA FLUTUANTE — PRINCIPAL ========== */
-        .container-principal {
+        /* ========== 🟢 JANELA FLUTUANTE — PRINCIPAL & ARRASTÁVEL ========== */
+        .janela-flutuante {
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -225,10 +225,26 @@
             pointer-events: none;
         }
 
-        .container-principal.visivel {
+        .janela-flutuante.visivel {
             opacity: 1;
             transform: translateY(0);
             pointer-events: auto;
+        }
+
+        .janela-flutuante.travada {
+            user-select: none;
+        }
+
+        .cabecalho-arrastavel {
+            cursor: move;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .janela-flutuante.travada .cabecalho-arrastavel {
+            cursor: default;
         }
 
         .titulo-app {
@@ -327,7 +343,7 @@
             pointer-events: none;
         }
 
-        .container-principal.aberto .menu-controles {
+        .janela-flutuante.aberto .menu-controles {
             opacity: 1;
             visibility: visible;
             transform: translateY(0) scale(1);
@@ -459,11 +475,20 @@
         }
 
         .botao-controle:hover { background: rgba(255,255,255,0.08); }
-        .botao-controle.ativo { background: rgba(59, 130, 246, 0.25); }
-        .botao-controle.ativo .icone { color: #93c5fd; }
         .icone { font-size: 18px; }
         .rotulo { font-size: 0.6rem; color: #7888a0; }
 
+        /* Estados de botão ativo/inativo */
+        .botao-ativo {
+            background: rgba(37, 99, 235, 0.35) !important;
+            border: 1px solid rgba(96, 165, 250, 0.4) !important;
+        }
+        .botao-inativo {
+            background: rgba(30, 41, 59, 0.6) !important;
+            border: 1px solid transparent !important;
+        }
+
+        /* Barra de volume com ícone mudo em 0% */
         .bloco-volume {
             display: flex;
             align-items: center;
@@ -473,22 +498,41 @@
             padding: 8px 12px;
             margin-top: 8px;
         }
-        .icone-volume { font-size: 14px; }
-        .slider-volume {
+        .volume-container {
+            position: relative;
+            display: flex;
+            align-items: center;
             flex: 1;
-            height: 4px;
-            -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-            outline: none;
         }
-        .slider-volume::-webkit-slider-thumb {
+        .volume-mudo-icone {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .volume-zero .volume-mudo-icone {
+            opacity: 1;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #334155;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 14px;
             height: 14px;
-            background: #3b82f6;
             border-radius: 50%;
+            background: #3b82f6;
             cursor: pointer;
+            border: none;
         }
 
         /* ✅ Área de chat */
@@ -747,13 +791,14 @@
         </div>
     </div>
 
-    <!-- 🟢 JANELA FLUTUANTE PRINCIPAL -->
-    <div class="container-principal" id="containerPrincipal">
-        <div class="titulo-app">Guardian Shield</div>
-        
-        <div class="botao-perfil online" id="botaoPerfil">
-            <span>👤</span>
-            <div class="anel-notificacao" id="anelNotif"></div>
+    <!-- 🟢 JANELA FLUTUANTE ARRASTÁVEL PRINCIPAL -->
+    <div class="janela-flutuante" id="containerPrincipal">
+        <div class="cabecalho-arrastavel">
+            <div class="titulo-app">Guardian Shield</div>
+            <div class="botao-perfil online" id="botaoPerfil">
+                <span>👤</span>
+                <div class="anel-notificacao" id="anelNotif"></div>
+            </div>
         </div>
 
         <div class="menu-controles" id="menuControles">
@@ -825,15 +870,15 @@
                     <span class="icone">📇</span>
                     <span class="rotulo">Contatos</span>
                 </button>
-                <button class="botao-controle" id="btnChat">
+                <button class="botao-controle botao-inativo" id="btnChat">
                     <span class="icone">💬</span>
                     <span class="rotulo">Chat</span>
                 </button>
-                <button class="botao-controle" id="btnMicrofone">
+                <button class="botao-controle botao-inativo" id="btnMicrofone">
                     <span class="icone">🎤</span>
                     <span class="rotulo">Mudo</span>
                 </button>
-                <button class="botao-controle" id="btnTravar">
+                <button class="botao-controle" id="btnTravar" data-acao="travar">
                     <span class="icone">🔒</span>
                     <span class="rotulo">Travar</span>
                 </button>
@@ -879,11 +924,14 @@
                 <div id="listaTodos"></div>
             </div>
 
-            <!-- Volume -->
+            <!-- Volume com ícone Mudo em 0% -->
             <div class="bloco-volume">
-                <span class="icone-volume">🔊</span>
-                <input type="range" class="slider-volume" min="0" max="100" value="75" id="sliderVolume">
-                <span style="font-size: 0.65rem; color: #64748b; min-width: 28px; text-align: right;" id="valorVolume">75%</span>
+                <span style="font-size:12px; opacity:0.7;">🔊</span>
+                <div class="volume-container" id="volumeContainer">
+                    <input type="range" id="volumeAudio" min="0" max="100" value="75" style="margin:0 8px;">
+                    <span class="volume-mudo-icone" id="iconeMudo">🔇</span>
+                </div>
+                <span style="font-size:12px; opacity:0.7;" id="valorVolume">75%</span>
             </div>
 
             <!-- Relógio digital -->
@@ -928,8 +976,7 @@
         const btnRecusar = document.getElementById('btnRecusar');
         const containerPrincipal = document.getElementById('containerPrincipal');
         const botaoPerfil = document.getElementById('botaoPerfil');
-        const menuControles = document.getElementById('menuControles');
-        const botaoFechar = document.getElementById('botaoFechar');
+        const botaofecharMenu = document.getElementById('botaoFechar');
         const anelNotif = document.getElementById('anelNotif');
         const areaFotosChamada = document.getElementById('areaFotosChamada');
         const fotoVoce = document.getElementById('fotoVoce');
@@ -961,7 +1008,7 @@
             if (!menuAberto) limparNotificacao();
         });
 
-        botaoFechar.addEventListener('click', () => {
+        botaofecharMenu.addEventListener('click', () => {
             menuAberto = false;
             containerPrincipal.classList.remove('aberto');
         });
@@ -975,6 +1022,96 @@
         function limparNotificacao() {
             anelNotif.classList.remove('piscando');
         }
+
+        // ==========================================
+        // 🔊 BARRA DE VOLUME — MOSTRAR MUDO EM 0%
+        // ==========================================
+        const volumeEl = document.getElementById('volumeAudio');
+        const volumeContainer = document.getElementById('volumeContainer');
+        const valorVolume = document.getElementById('valorVolume');
+        
+        function atualizarIconeVolume() {
+            if (!volumeEl || !volumeContainer) return;
+            const val = parseInt(volumeEl.value);
+            valorVolume.textContent = val + '%';
+            if (val === 0) {
+                volumeContainer.classList.add('volume-zero');
+            } else {
+                volumeContainer.classList.remove('volume-zero');
+            }
+        }
+        
+        if (volumeEl) {
+            volumeEl.addEventListener('input', atualizarIconeVolume);
+            atualizarIconeVolume();
+        }
+
+        // ==========================================
+        // 🪟 JANELA FLUTUANTE — ARRASTAR + TRAVAR
+        // ==========================================
+        const janela = document.querySelector('.janela-flutuante');
+        const btnTravar = document.querySelector('[data-acao="travar"]');
+        let janelaTravada = false;
+        let arrastando = false;
+        let deslocamentoX = 0, deslocamentoY = 0;
+
+        function alternarTravarJanela() {
+            janelaTravada = !janelaTravada;
+            if (janelaTravada) {
+                janela.classList.add('travada');
+                if (btnTravar) btnTravar.querySelector('.icone').textContent = '🔓';
+            } else {
+                janela.classList.remove('travada');
+                if (btnTravar) btnTravar.querySelector('.icone').textContent = '🔒';
+            }
+        }
+
+        function iniciarArrasto(e) {
+            if (janelaTravada) return;
+            arrastando = true;
+            const rect = janela.getBoundingClientRect();
+            const clienteX = e.clientX || e.touches[0].clientX;
+            const clienteY = e.clientY || e.touches[0].clientY;
+            deslocamentoX = clienteX - rect.left;
+            deslocamentoY = clienteY - rect.top;
+            janela.style.transition = 'none';
+        }
+
+        function arrastar(e) {
+            if (!arrastando || janelaTravada) return;
+            e.preventDefault();
+            const clienteX = e.clientX || e.touches[0].clientX;
+            const clienteY = e.clientY || e.touches[0].clientY;
+            
+            let novaEsq = clienteX - deslocamentoX;
+            let novaTop = clienteY - deslocamentoY;
+            
+            const larguraJanela = janela.offsetWidth;
+            const alturaJanela = janela.offsetHeight;
+            const limiteDireita = window.innerWidth - larguraJanela;
+            const limiteInferior = window.innerHeight - alturaJanela;
+            
+            novaEsq = Math.max(0, Math.min(novaEsq, limiteDireita));
+            novaTop = Math.max(0, Math.min(novaTop, limiteInferior));
+            
+            janela.style.left = novaEsq + 'px';
+            janela.style.top = novaTop + 'px';
+            janela.style.bottom = 'auto';
+            janela.style.right = 'auto';
+        }
+
+        function pararArrasto() {
+            arrastando = false;
+        }
+
+        if (btnTravar) btnTravar.addEventListener('click', alternarTravarJanela);
+        const cabecalho = janela?.querySelector('.cabecalho-arrastavel') || janela;
+        cabecalho?.addEventListener('mousedown', iniciarArrasto);
+        document.addEventListener('mousemove', arrastar);
+        document.addEventListener('mouseup', pararArrasto);
+        cabecalho?.addEventListener('touchstart', iniciarArrasto);
+        document.addEventListener('touchmove', arrastar, { passive: false });
+        document.addEventListener('touchend', pararArrasto);
 
         // ==========================================
         // 📋 MENU DE STATUS SUSPENSO
@@ -1130,10 +1267,7 @@
         // ==========================================
         const btnChat = document.getElementById('btnChat');
         const btnMicrofone = document.getElementById('btnMicrofone');
-        const btnTravar = document.getElementById('btnTravar');
         const btnSair = document.getElementById('btnSair');
-        const sliderVolume = document.getElementById('sliderVolume');
-        const valorVolume = document.getElementById('valorVolume');
         const areaChat = document.getElementById('areaChat');
         const listaMensagens = document.getElementById('listaMensagens');
         const inputMensagem = document.getElementById('inputMensagem');
@@ -1144,30 +1278,22 @@
 
         let chatVisivel = false;
         let mudo = false;
-        let travado = false;
         let falandoSouEu = true;
-
-        sliderVolume.addEventListener('input', () => {
-            valorVolume.textContent = sliderVolume.value + '%';
-        });
 
         btnMicrofone.addEventListener('click', () => {
             mudo = !mudo;
             btnMicrofone.classList.toggle('ativo', mudo);
+            btnMicrofone.classList.toggle('botao-ativo', mudo);
+            btnMicrofone.classList.toggle('botao-inativo', !mudo);
             btnMicrofone.querySelector('.icone').textContent = mudo ? '🔇' : '🎤';
-        });
-
-        btnTravar.addEventListener('click', () => {
-            travado = !travado;
-            btnTravar.classList.toggle('ativo', travado);
-            btnTravar.querySelector('.icone').textContent = travado ? '🔒' : '🔓';
-            btnTravar.querySelector('.rotulo').textContent = travado ? 'Destravar' : 'Travar';
         });
 
         btnChat.addEventListener('click', () => {
             chatVisivel = !chatVisivel;
             areaChat.style.display = chatVisivel ? 'block' : 'none';
             btnChat.classList.toggle('ativo', chatVisivel);
+            btnChat.classList.toggle('botao-ativo', chatVisivel);
+            btnChat.classList.toggle('botao-inativo', !chatVisivel);
             if (chatVisivel) limparNotificacao();
             else inputBusca.value = '';
             limparDestaquesBusca();
@@ -1184,22 +1310,24 @@
             }
         });
 
-        function adicionarMensagem(textoOuHtml, sua = false, ehHtml = false) {
+        function adicionarMensagemNaTela(textoOuHtml, sua = false, ehHtml = false) {
             const msg = document.createElement('div');
             msg.className = `mensagem-item ${sua ? 'sua' : ''}`;
             if (ehHtml) msg.innerHTML = textoOuHtml;
             else msg.textContent = textoOuHtml;
             listaMensagens.appendChild(msg);
             areaChat.scrollTop = areaChat.scrollHeight;
+
+            salvarMensagem(textoOuHtml, sua, ehHtml);
         }
 
         botaoEnviar.addEventListener('click', () => {
             const texto = inputMensagem.value.trim();
             if (texto) {
-                adicionarMensagem(texto, true);
+                adicionarMensagemNaTela(texto, true, false);
                 inputMensagem.value = '';
                 setTimeout(() => {
-                    adicionarMensagem('Mensagem recebida! 👋', false);
+                    adicionarMensagemNaTela('Mensagem recebida! 👋', false, false);
                     novaNotificacao();
                 }, 800);
             }
@@ -1218,7 +1346,7 @@
                         <span style="font-size:0.65rem; color:#94a3b8;">📸 Imagem enviada</span>
                         <img src="${event.target.result}" alt="Imagem" onclick="this.classList.toggle('ampliada')">
                     `;
-                    adicionarMensagem(htmlImg, true, true);
+                    adicionarMensagemNaTela(htmlImg, true, true);
                 };
                 leitor.readAsDataURL(arquivo);
             }
@@ -1237,7 +1365,7 @@
                             <span style="font-size:0.65rem; color:#94a3b8;">📸 Colada</span>
                             <img src="${event.target.result}" alt="Imagem colada" onclick="this.classList.toggle('ampliada')">
                         `;
-                        adicionarMensagem(htmlImg, true, true);
+                        adicionarMensagemNaTela(htmlImg, true, true);
                     };
                     leitor.readAsDataURL(arquivo);
                     e.preventDefault();
@@ -1282,7 +1410,35 @@
             novaNotificacao();
         }, 2000);
 
-        console.log('%c✨ Guardian Shield carregado com sucesso!', 'color: #10b981; font-weight: bold;');
+        // ==========================================
+        // 💾 SALVAR E CARREGAR HISTÓRICO AUTOMÁTICO
+        // ==========================================
+        const CHAVE_HISTORICO = 'guardian_shield_historico';
+
+        function carregarHistorico() {
+            const salvo = localStorage.getItem(CHAVE_HISTORICO);
+            if (salvo) {
+                const mensagens = JSON.parse(salvo);
+                mensagens.forEach(msg => {
+                    const m = document.createElement('div');
+                    m.className = `mensagem-item ${msg.sua ? 'sua' : ''}`;
+                    if (msg.ehHtml) m.innerHTML = msg.texto;
+                    else m.textContent = msg.texto;
+                    listaMensagens.appendChild(m);
+                });
+                areaChat.scrollTop = areaChat.scrollHeight;
+            }
+        }
+
+        function salvarMensagem(texto, sua = false, ehHtml = false) {
+            const mensagens = JSON.parse(localStorage.getItem(CHAVE_HISTORICO) || '[]');
+            mensagens.push({ texto, sua, ehHtml, data: new Date().toISOString() });
+            localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(mensagens));
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarHistorico);
+
+        console.log('%c✨ Guardian Shield Completo carregado com sucesso!', 'color: #10b981; font-weight: bold;');
     </script>
 </body>
 </html>
