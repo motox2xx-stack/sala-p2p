@@ -880,6 +880,83 @@
             margin-top: 6px;
         }
 
+        /* 📑 Abas dos contatos */
+        .abas { display: flex; gap: 4px; margin-bottom: 8px; }
+        .aba {
+            flex: 1;
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 6px 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #94a3b8;
+            background: rgba(255,255,255,0.03);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .aba:hover { background: rgba(255,255,255,0.08); }
+        .aba.ativa { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+
+        /* 🖱️ Janelinha de opções do contato (centro da tela) */
+        .overlay-contato {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease;
+        }
+        .overlay-contato.ativo { opacity: 1; visibility: visible; }
+        .cartao-contato {
+            position: relative;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            text-align: center;
+            min-width: 280px;
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+        }
+        .overlay-contato.ativo .cartao-contato { transform: scale(1); }
+        .cartao-contato-nome { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+        .cartao-contato-sub { font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px; }
+        .opcoes-contato { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .opcoes-contato .rotulo { font-size: 0.7rem; }
+
+        /* Menu da janela flutuante: nunca passa da tela (rola por dentro se precisar) */
+        .menu-controles { overflow-y: auto; overflow-x: hidden; }
+        .menu-controles::-webkit-scrollbar { width: 4px; }
+        .menu-controles::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* 🧭 Menu principal e páginas */
+        body { height: 100vh; display: flex; flex-direction: column; }
+        #paginas { flex: 1; overflow-y: auto; }
+        #paginas > section { min-height: 100%; }
+        .menu-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+        .menu-btn.ativo {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.05); }
+        .menu-btn.ativo:hover { background: rgba(59, 130, 246, 0.2); }
+        #pag-perfil select option { background: #0f172a; color: white; }
+
         /* 📋 Estilos para Status Suspenso e Contatos */
         .opcao-status:hover {
             background: rgba(255,255,255,0.05);
@@ -919,6 +996,15 @@
     </style>
 </head>
 <body>
+
+    <!-- 🧭 MENU PRINCIPAL -->
+    <nav style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05);">
+        <button class="menu-btn ativo" data-pagina="conversa">💬 Conversa</button>
+        <button class="menu-btn" data-pagina="sala">📞 Sala de Chamada</button>
+        <button class="menu-btn" data-pagina="contatos">👥 Contatos</button>
+        <button class="menu-btn" data-pagina="perfil">👤 Perfil</button>
+        <button class="menu-btn" data-pagina="suporte">❓ Suporte</button>
+    </nav>
 
     <!-- 📞 TELA DE CHAMADA ENTRANTE -->
     <div class="tela-chamada-entrante" id="telaChamada">
@@ -965,6 +1051,11 @@
         </div>
     </div>
 
+    <!-- 📄 ÁREA DAS PÁGINAS -->
+    <main id="paginas">
+    <!-- 💬 PÁGINA CONVERSA (a telinha flutuante fica aqui dentro) -->
+    <section id="pag-conversa" style="display:block; padding:15px;">
+
     <!-- 🟢 JANELA FLUTUANTE ARRASTÁVEL PRINCIPAL -->
     <div class="janela-flutuante" id="containerPrincipal">
         <div class="cabecalho-arrastavel">
@@ -985,8 +1076,8 @@
                     <div class="foto-chamada-nome">Você</div>
                 </div>
                 <div class="foto-chamada" id="fotoEle">
-                    <div class="foto-chamada-img">A</div>
-                    <div class="foto-chamada-nome">Amigo</div>
+                    <div class="foto-chamada-img" id="fotoEleInicial">A</div>
+                    <div class="foto-chamada-nome" id="fotoEleNome">Amigo</div>
                 </div>
             </div>
 
@@ -994,7 +1085,7 @@
             <div class="status-linha">
                 <span style="display:flex; align-items:center; gap:6px;">
                     <button id="btnPerfilInfo" title="Meu perfil" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0;">👤</button>
-                    <span>Você ↔ Amigo</span>
+                    <span id="nomePar">Você ↔ Amigo</span>
                 </span>
                 <span class="status-conectado"><span class="status-luz"></span> Conectado</span>
             </div>
@@ -1061,7 +1152,7 @@
                 <div style="margin-bottom: 6px;"><span style="color:#94a3b8;">Nome:</span> <span id="perfilNome">Usuário</span></div>
                 <div style="margin-bottom: 6px;"><span style="color:#94a3b8;">ID:</span> <span id="perfilId">---</span></div>
                 <div style="margin-bottom: 6px; display:flex; align-items:center; gap:6px;"><span style="color:#94a3b8;">Status:</span> <span id="perfilStatus" style="display:flex; align-items:center; gap:6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span> Disponível</span></div>
-                <div><span style="color:#94a3b8;">Conectado com:</span> Amigo</div>
+                <div><span style="color:#94a3b8;">Conectado com:</span> <span id="perfilConectado">Amigo</span></div>
             </div>
 
             <!-- Botões principais (todos com estado ativo/inativo igual ao Chat) -->
@@ -1114,15 +1205,17 @@
                     margin-bottom: 12px;
                 ">
 
+                <!-- 📑 Abas: Favoritos (on/off) | Online (só online) | Contatos (todos, on/off) -->
+                <div class="abas">
+                    <div class="aba ativa" data-grupo="favoritos">⭐ Favoritos</div>
+                    <div class="aba" data-grupo="online">🟢 Online</div>
+                    <div class="aba" data-grupo="todos">👤 Contatos</div>
+                </div>
+
                 <div class="lista-contatos" id="rolagemContatos">
-                <div style="font-size: 0.65rem; color: #eab308; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">⭐ Favoritos</div>
-                <div id="listaFavoritos" style="margin-bottom: 12px;"></div>
-
-                <div style="font-size: 0.65rem; color: #22c55e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">● Online</div>
-                <div id="listaOnline" style="margin-bottom: 12px;"></div>
-
-                <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Todos os Contatos</div>
-                <div id="listaTodos"></div>
+                    <div id="listaFavoritos"></div>
+                    <div id="listaOnline" style="display:none;"></div>
+                    <div id="listaTodos" style="display:none;"></div>
                 </div>
             </div>
 
@@ -1156,6 +1249,95 @@
                     <input type="text" class="input-mensagem" id="inputMensagem" placeholder="Digite sua mensagem...">
                     <button class="botao-enviar" id="botaoEnviar">➤</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    </section>
+
+    <!-- 📞 PÁGINA SALA DE CHAMADA -->
+    <section id="pag-sala" style="display:none; padding:15px;">
+        <h3 style="margin-bottom:15px;">📞 Sala de Chamada</h3>
+        <div style="text-align:center; padding:20px;">
+            <button id="btnLigar" style="
+                width:120px; height:120px; border-radius:50%;
+                background:linear-gradient(145deg, #22c55e, #16a34a);
+                border:none; color:white; font-size:40px; cursor:pointer;
+                box-shadow:0 4px 15px rgba(34, 197, 94, 0.3);">📞</button>
+            <p style="margin-top:12px; font-size:0.85rem; opacity:0.7;">Clique para conectar</p>
+        </div>
+        <div id="statusConexao" style="
+            padding:12px; border-radius:6px; text-align:center;
+            background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05);
+            font-size:0.8rem; opacity:0.7;">
+            ⏳ Pronto para conectar
+        </div>
+    </section>
+
+    <!-- 👥 PÁGINA CONTATOS -->
+    <section id="pag-contatos" style="display:none; padding:15px;">
+        <h3 style="margin-bottom:10px;">👥 Meus Contatos</h3>
+        <input type="text" id="buscaPaginaContatos" placeholder="Buscar contato..." style="
+            width:100%; padding:8px; border-radius:6px; border:none; outline:none;
+            background:rgba(255,255,255,0.05); color:white; margin-bottom:12px;">
+        <div id="listaContatos"></div>
+    </section>
+
+    <!-- 👤 PÁGINA PERFIL -->
+    <section id="pag-perfil" style="display:none; padding:15px;">
+        <h3 style="margin-bottom:15px;">👤 Meu Perfil</h3>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:0.8rem; opacity:0.7; display:block; margin-bottom:4px;">Seu Nome</label>
+            <input type="text" id="meuNomePerfil" placeholder="Digite seu nome..." style="
+                width:100%; padding:8px; border-radius:6px; border:none; outline:none;
+                background:rgba(255,255,255,0.05); color:white;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="font-size:0.8rem; opacity:0.7; display:block; margin-bottom:4px;">Status</label>
+            <select id="meuStatus" style="
+                width:100%; padding:8px; border-radius:6px; border:none;
+                background:rgba(255,255,255,0.05); color:white;">
+                <option value="disponivel">🟢 Disponível</option>
+                <option value="ausente">🟡 Ausente</option>
+                <option value="ocupado">🔴 Ocupado</option>
+                <option value="silencio">🟣 Modo Silêncio</option>
+            </select>
+        </div>
+        <button id="salvarPerfil" style="
+            padding:8px 16px; border-radius:6px; border:none;
+            background:#3b82f6; color:white; cursor:pointer;">Salvar</button>
+    </section>
+
+    <!-- ❓ PÁGINA SUPORTE -->
+    <section id="pag-suporte" style="display:none; padding:15px;">
+        <h3 style="margin-bottom:15px;">❓ Suporte</h3>
+        <div style="font-size:0.85rem; line-height:1.8;">
+            <p><strong>📞 Para conectar:</strong> Abra em duas abas e clique em Ligar nos dois.</p>
+            <p><strong>💬 Para conversar:</strong> Digite e envie normalmente após conectado.</p>
+            <p><strong>📸 Arquivos:</strong> Fotos e arquivos funcionam após conexão estabelecida.</p>
+        </div>
+    </section>
+    </main>
+
+    <!-- 🖱️ JANELINHA DE OPÇÕES DO CONTATO -->
+    <div class="overlay-contato" id="overlayContato">
+        <div class="cartao-contato">
+            <button class="botao-fechar" id="btnFecharOverlayContato" title="Fechar">✕</button>
+            <div class="cartao-contato-nome" id="overlayContatoNome">Contato</div>
+            <div class="cartao-contato-sub">Como você quer falar?</div>
+            <div class="opcoes-contato">
+                <button class="botao-controle" data-acao-contato="chat">
+                    <span class="icone">💬</span>
+                    <span class="rotulo">Chat</span>
+                </button>
+                <button class="botao-controle" data-acao-contato="ligacao">
+                    <span class="icone">📞</span>
+                    <span class="rotulo">Ligação</span>
+                </button>
+                <button class="botao-controle" data-acao-contato="tela">
+                    <span class="icone">🖥️</span>
+                    <span class="rotulo">Transmissão de Tela</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1199,17 +1381,19 @@
         let menuAberto = false;
         let emChamada = false;
 
+        function iniciarChamada() {
+            telaChamada.classList.remove('ativa', 'aceitando');
+            containerPrincipal.classList.add('visivel');
+            menuAberto = true;
+            containerPrincipal.classList.add('aberto');
+            emChamada = true;
+            areaFotosChamada.style.display = 'flex';
+            fotoVoce.classList.add('falando');
+        }
+
         btnAceitar.addEventListener('click', () => {
             telaChamada.classList.add('aceitando');
-            setTimeout(() => {
-                telaChamada.classList.remove('ativa', 'aceitando');
-                containerPrincipal.classList.add('visivel');
-                menuAberto = true;
-                containerPrincipal.classList.add('aberto');
-                emChamada = true;
-                areaFotosChamada.style.display = 'flex';
-                fotoVoce.classList.add('falando');
-            }, 500);
+            setTimeout(iniciarChamada, 500);
         });
 
         btnRecusar.addEventListener('click', () => {
@@ -1217,6 +1401,7 @@
         });
 
         botaoPerfil.addEventListener('click', () => {
+            if (houveArrasto) { houveArrasto = false; return; }
             menuAberto = !menuAberto;
             containerPrincipal.classList.toggle('aberto', menuAberto);
             if (!menuAberto) limparNotificacao();
@@ -1274,43 +1459,116 @@
             definirAtivo(btnTravar, janelaTravada);
         }
 
+        let houveArrasto = false;
+        const MARGEM_TELA = 20;   // distância da borda quando o ímã encaixa
+        const LIMITE_IMA = 80;    // a que distância da borda o ímã passa a atuar
+        const menuControlesEl = document.getElementById('menuControles');
+
+        function pontoDoEvento(e) {
+            const t = e.touches && e.touches[0];
+            return { x: t ? t.clientX : e.clientX, y: t ? t.clientY : e.clientY };
+        }
+
+        // 👁️ Mantém o menu aberto sempre inteiro na tela (abre para cima/baixo e esquerda/direita)
+        function ajustarPosicaoMenu() {
+            const r = janela.getBoundingClientRect();
+            const m = menuControlesEl;
+            const folga = 8;
+            const alturaMenu = m.scrollHeight + 2;
+            const larguraMenu = m.offsetWidth;
+
+            const espacoAcima = r.bottom - 66 - folga;
+            const espacoAbaixo = window.innerHeight - r.bottom - 10 - folga;
+            const abreParaCima = alturaMenu <= espacoAcima || espacoAcima >= espacoAbaixo;
+            const espaco = abreParaCima ? espacoAcima : espacoAbaixo;
+
+            if (abreParaCima) { m.style.bottom = '66px'; m.style.top = 'auto'; }
+            else { m.style.top = 'calc(100% + 10px)'; m.style.bottom = 'auto'; }
+            m.style.maxHeight = Math.max(160, espaco) + 'px';
+
+            const cabeNaEsquerda = (r.right - larguraMenu) >= folga;
+            if (cabeNaEsquerda) { m.style.right = '0'; m.style.left = 'auto'; }
+            else { m.style.left = '0'; m.style.right = 'auto'; }
+
+            m.style.transformOrigin = (abreParaCima ? 'bottom' : 'top') + ' ' + (cabeNaEsquerda ? 'right' : 'left');
+        }
+
+        // 🧲 Ímã: ao soltar perto da borda, encaixa sozinha
+        function aplicarIma() {
+            const r = janela.getBoundingClientRect();
+            const dEsq = r.left, dDir = window.innerWidth - r.right;
+            const dTopo = r.top, dBase = window.innerHeight - r.bottom;
+            let x = r.left, y = r.top;
+            if (Math.min(dEsq, dDir) < LIMITE_IMA) x = dEsq <= dDir ? MARGEM_TELA : window.innerWidth - r.width - MARGEM_TELA;
+            if (Math.min(dTopo, dBase) < LIMITE_IMA) y = dTopo <= dBase ? MARGEM_TELA : window.innerHeight - r.height - MARGEM_TELA;
+            janela.style.left = x + 'px';
+            janela.style.top = y + 'px';
+            janela.style.right = 'auto';
+            janela.style.bottom = 'auto';
+        }
+
+        // 📐 Nunca deixa a janela sair da tela (ex.: ao redimensionar)
+        function manterNaTela() {
+            if (!janela.style.left && !janela.style.top) { ajustarPosicaoMenu(); return; }
+            const r = janela.getBoundingClientRect();
+            const x = Math.max(0, Math.min(r.left, window.innerWidth - r.width));
+            const y = Math.max(0, Math.min(r.top, window.innerHeight - r.height));
+            janela.style.left = x + 'px';
+            janela.style.top = y + 'px';
+            janela.style.right = 'auto';
+            janela.style.bottom = 'auto';
+            ajustarPosicaoMenu();
+        }
+
         function iniciarArrasto(e) {
             if (janelaTravada) return;
             arrastando = true;
+            houveArrasto = false;
             const rect = janela.getBoundingClientRect();
-            const clienteX = e.clientX || e.touches[0].clientX;
-            const clienteY = e.clientY || e.touches[0].clientY;
-            deslocamentoX = clienteX - rect.left;
-            deslocamentoY = clienteY - rect.top;
+            const ponto = pontoDoEvento(e);
+            deslocamentoX = ponto.x - rect.left;
+            deslocamentoY = ponto.y - rect.top;
             janela.style.transition = 'none';
         }
 
         function arrastar(e) {
             if (!arrastando || janelaTravada) return;
             e.preventDefault();
-            const clienteX = e.clientX || e.touches[0].clientX;
-            const clienteY = e.clientY || e.touches[0].clientY;
-            
-            let novaEsq = clienteX - deslocamentoX;
-            let novaTop = clienteY - deslocamentoY;
-            
-            const larguraJanela = janela.offsetWidth;
-            const alturaJanela = janela.offsetHeight;
-            const limiteDireita = window.innerWidth - larguraJanela;
-            const limiteInferior = window.innerHeight - alturaJanela;
-            
+            const ponto = pontoDoEvento(e);
+
+            let novaEsq = ponto.x - deslocamentoX;
+            let novaTop = ponto.y - deslocamentoY;
+
+            const limiteDireita = window.innerWidth - janela.offsetWidth;
+            const limiteInferior = window.innerHeight - janela.offsetHeight;
+
             novaEsq = Math.max(0, Math.min(novaEsq, limiteDireita));
             novaTop = Math.max(0, Math.min(novaTop, limiteInferior));
-            
+
+            const rect = janela.getBoundingClientRect();
+            if (Math.abs(novaEsq - rect.left) > 3 || Math.abs(novaTop - rect.top) > 3) houveArrasto = true;
+
             janela.style.left = novaEsq + 'px';
             janela.style.top = novaTop + 'px';
             janela.style.bottom = 'auto';
             janela.style.right = 'auto';
+            ajustarPosicaoMenu();
         }
 
         function pararArrasto() {
+            if (!arrastando) return;
             arrastando = false;
+            janela.style.transition = 'left 0.25s ease, top 0.25s ease, opacity 0.4s ease, transform 0.4s ease';
+            if (houveArrasto && !janelaTravada) {
+                aplicarIma();
+                setTimeout(ajustarPosicaoMenu, 300);
+            }
+            setTimeout(() => { houveArrasto = false; }, 0);
         }
+
+        window.addEventListener('resize', manterNaTela);
+        if (window.ResizeObserver) new ResizeObserver(ajustarPosicaoMenu).observe(menuControlesEl);
+        ajustarPosicaoMenu();
 
         if (btnTravar) btnTravar.addEventListener('click', alternarTravarJanela);
         const cabecalho = janela?.querySelector('.cabecalho-arrastavel') || janela;
@@ -1350,6 +1608,7 @@
                 textoStatus.innerHTML = `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${cor};"></span> ${nome}`;
                 const perfilStatusEl = document.getElementById('perfilStatus');
                 if (perfilStatusEl) perfilStatusEl.innerHTML = textoStatus.innerHTML;
+                salvarStatusGlobal(opcao.dataset.status);
                 menuStatus.style.display = 'none';
                 menuStatusAberto = false;
             });
@@ -1396,30 +1655,39 @@
             else favoritosIds.push(id);
             try { localStorage.setItem(CHAVE_FAVORITOS, JSON.stringify(favoritosIds)); } catch (e) {}
             renderizarContatos(buscaContatos.value);
+            renderizarPaginaContatos();
         }
 
         function renderizarContatos(filtro = '') {
             const rolagem = document.getElementById('rolagemContatos');
             const posicao = rolagem ? rolagem.scrollTop : 0;
             const termo = filtro.toLowerCase();
+            const ordenar = (a, b) => a.nome.localeCompare(b.nome);
             const filtrados = contatos.filter(c => c.nome.toLowerCase().includes(termo));
+            const vazio = (txt) => `<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">${txt}</div>`;
 
-            const favoritos = filtrados.filter(c => ehFavorito(c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
-            const online = filtrados.filter(c => !ehFavorito(c.id) && c.online).sort((a, b) => a.nome.localeCompare(b.nome));
-            const todos = filtrados.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+            // ⭐ Favoritos → com bolinha on/off
+            const favoritos = filtrados.filter(c => ehFavorito(c.id)).sort(ordenar);
+            // 🟢 Online → só quem está online, SEM bolinha
+            const online = filtrados.filter(c => c.online).sort(ordenar);
+            // 👤 Contatos → todos, com bolinha on/off
+            const todos = filtrados.slice().sort(ordenar);
 
-            listaFavoritos.innerHTML = favoritos.length ? favoritos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum favorito</div>';
-            listaOnline.innerHTML = online.length ? online.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Ninguém online</div>';
-            listaTodos.innerHTML = todos.length ? todos.map(c => criarItem(c)).join('') : '<div style="font-size:0.7rem; color:#475569; padding:4px 8px;">Nenhum contato</div>';
+            listaFavoritos.innerHTML = favoritos.length ? favoritos.map(c => criarItem(c, true)).join('') : vazio('Nenhum favorito');
+            listaOnline.innerHTML = online.length ? online.map(c => criarItem(c, false)).join('') : vazio('Ninguém online');
+            listaTodos.innerHTML = todos.length ? todos.map(c => criarItem(c, true)).join('') : vazio('Nenhum contato');
             if (rolagem) rolagem.scrollTop = posicao;
         }
 
-        function criarItem(contato) {
+        function criarItem(contato, mostrarStatus = true) {
             const fav = ehFavorito(contato.id);
+            const bolinha = mostrarStatus
+                ? `<span class="bolinha-status ${contato.online ? 'bolinha-online' : ''}"></span>`
+                : '';
             return `
                 <div class="item-contato" data-id="${contato.id}">
                     <div class="nome-contato">
-                        <span class="bolinha-status ${contato.online ? 'bolinha-online' : ''}"></span>
+                        ${bolinha}
                         <span>${contato.nome}</span>
                     </div>
                     <button class="btn-favorito ${fav ? 'favoritado' : ''}" data-id="${contato.id}" title="${fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">${fav ? '★' : '☆'}</button>
@@ -1427,11 +1695,27 @@
             `;
         }
 
+        // 📑 Troca de abas
+        function mostrarGrupo(grupo) {
+            secaoContatos.querySelectorAll('.aba').forEach(a => a.classList.toggle('ativa', a.dataset.grupo === grupo));
+            listaFavoritos.style.display = grupo === 'favoritos' ? 'block' : 'none';
+            listaOnline.style.display = grupo === 'online' ? 'block' : 'none';
+            listaTodos.style.display = grupo === 'todos' ? 'block' : 'none';
+        }
+
         secaoContatos.addEventListener('click', (e) => {
+            const aba = e.target.closest('.aba');
+            if (aba) { mostrarGrupo(aba.dataset.grupo); return; }
+
             const estrela = e.target.closest('.btn-favorito');
-            if (!estrela) return;
-            e.stopPropagation();
-            alternarFavorito(Number(estrela.dataset.id));
+            if (estrela) {
+                e.stopPropagation();
+                alternarFavorito(Number(estrela.dataset.id));
+                return;
+            }
+
+            const item = e.target.closest('.item-contato');
+            if (item) abrirOpcoesContato(Number(item.dataset.id));
         });
 
         btnContatos.addEventListener('click', () => {
@@ -1587,10 +1871,11 @@
                 emChamada = false;
                 areaFotosChamada.style.display = 'none';
                 fecharLive();
+                resetarSala();
             }
         });
 
-        const NOME_CONTATO = 'Amigo';
+        let nomeContatoAtual = 'Amigo';
         let contadorMsg = 0;
 
         // ✓ enviada | ✓✓ entregue | ✓✓ azul = lida
@@ -1697,7 +1982,7 @@
                 adicionarMensagemNaTela(texto, true, false);
                 inputMensagem.value = '';
                 // Resposta de demonstração
-                setTimeout(() => mostrarDigitando(NOME_CONTATO), 1500);
+                setTimeout(() => mostrarDigitando(nomeContatoAtual), 1500);
                 setTimeout(() => receberMensagem('Beleza!'), 3200);
             }
         });
@@ -1872,6 +2157,185 @@
         }
 
         document.addEventListener('DOMContentLoaded', carregarHistorico);
+
+        // ==========================================
+        // 🖱️ JANELINHA DO CONTATO — Chat | Ligação | Transmissão de Tela
+        // ==========================================
+        const overlayContato = document.getElementById('overlayContato');
+        let contatoSelecionado = null;
+
+        function definirContatoAtual(nome) {
+            nomeContatoAtual = nome;
+            document.getElementById('nomePar').textContent = `Você ↔ ${nome}`;
+            document.getElementById('fotoEleNome').textContent = nome;
+            document.getElementById('fotoEleInicial').textContent = nome.charAt(0).toUpperCase();
+            document.getElementById('perfilConectado').textContent = nome;
+            document.getElementById('quemEstaChamando').textContent = `De: ${nome}`;
+        }
+
+        function abrirOpcoesContato(id) {
+            const c = contatos.find(x => x.id === id);
+            if (!c) return;
+            contatoSelecionado = c;
+            document.getElementById('overlayContatoNome').textContent = c.nome;
+            overlayContato.classList.add('ativo');
+        }
+
+        function fecharOpcoesContato() {
+            overlayContato.classList.remove('ativo');
+        }
+
+        function irParaConversa() {
+            document.querySelector('[data-pagina="conversa"]').click();
+        }
+
+        function garantirJanela() {
+            containerPrincipal.classList.add('visivel');
+            if (!menuAberto) {
+                menuAberto = true;
+                containerPrincipal.classList.add('aberto');
+            }
+            ajustarPosicaoMenu();
+        }
+
+        overlayContato.addEventListener('click', (e) => {
+            if (e.target === overlayContato) { fecharOpcoesContato(); return; }
+            const botao = e.target.closest('[data-acao-contato]');
+            if (!botao || !contatoSelecionado) return;
+
+            // Funciona para qualquer contato, online ou não
+            definirContatoAtual(contatoSelecionado.nome);
+            fecharOpcoesContato();
+            irParaConversa();
+
+            const acao = botao.dataset.acaoContato;
+            if (acao === 'chat') {
+                garantirJanela();
+                if (!chatVisivel) btnChat.click();
+            } else if (acao === 'ligacao') {
+                iniciarChamada();
+            } else if (acao === 'tela') {
+                garantirJanela();
+                if (!btnTela.classList.contains('ativo')) abrirLive(btnTela);
+            }
+        });
+
+        document.getElementById('btnFecharOverlayContato').addEventListener('click', fecharOpcoesContato);
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharOpcoesContato(); });
+
+        // ==========================================
+        // 🧭 NAVEGAÇÃO DO MENU PRINCIPAL
+        // ==========================================
+        const botoesMenu = document.querySelectorAll('.menu-btn');
+
+        botoesMenu.forEach(btn => {
+            btn.addEventListener('click', () => {
+                botoesMenu.forEach(b => b.classList.remove('ativo'));
+                btn.classList.add('ativo');
+                document.querySelectorAll('#paginas > section').forEach(pg => pg.style.display = 'none');
+                document.getElementById(`pag-${btn.dataset.pagina}`).style.display = 'block';
+                if (btn.dataset.pagina === 'contatos') renderizarPaginaContatos();
+            });
+        });
+
+        // ==========================================
+        // 👥 PÁGINA DE CONTATOS (usa os mesmos contatos e favoritos)
+        // ==========================================
+        const buscaPaginaContatos = document.getElementById('buscaPaginaContatos');
+        const listaPaginaContatos = document.getElementById('listaContatos');
+
+        function renderizarPaginaContatos() {
+            const termo = buscaPaginaContatos.value.toLowerCase();
+            const lista = contatos
+                .filter(c => c.nome.toLowerCase().includes(termo))
+                .sort((a, b) => (ehFavorito(b.id) - ehFavorito(a.id)) || a.nome.localeCompare(b.nome));
+            listaPaginaContatos.innerHTML = lista.length
+                ? lista.map(c => criarItem(c)).join('')
+                : '<p style="opacity:0.5; font-size:0.85rem;">Nenhum contato encontrado</p>';
+        }
+
+        buscaPaginaContatos.addEventListener('input', renderizarPaginaContatos);
+        listaPaginaContatos.addEventListener('click', (e) => {
+            const estrela = e.target.closest('.btn-favorito');
+            if (estrela) { alternarFavorito(Number(estrela.dataset.id)); return; }
+            const item = e.target.closest('.item-contato');
+            if (item) abrirOpcoesContato(Number(item.dataset.id));
+        });
+        renderizarPaginaContatos();
+
+        // ==========================================
+        // 👤 PERFIL — nome e status salvos (liga com o menu flutuante)
+        // ==========================================
+        const nomePerfil = document.getElementById('meuNomePerfil');
+        const statusPerfil = document.getElementById('meuStatus');
+        const salvarPerfil = document.getElementById('salvarPerfil');
+        const STATUS_INFO = {
+            disponivel: { cor: '#22c55e', nome: 'Disponível' },
+            ausente:    { cor: '#eab308', nome: 'Ausente' },
+            ocupado:    { cor: '#ef4444', nome: 'Ocupado' },
+            silencio:   { cor: '#6366f1', nome: 'Modo Silêncio' }
+        };
+
+        function lerSalvo(chave, padrao) {
+            try { return localStorage.getItem(chave) || padrao; } catch (e) { return padrao; }
+        }
+
+        function aplicarStatus(chave) {
+            const info = STATUS_INFO[chave] || STATUS_INFO.disponivel;
+            const html = `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${info.cor};"></span> ${info.nome}`;
+            textoStatus.innerHTML = html;
+            document.getElementById('perfilStatus').innerHTML = html;
+            statusPerfil.value = STATUS_INFO[chave] ? chave : 'disponivel';
+        }
+
+        function salvarStatusGlobal(chave) {
+            try { localStorage.setItem('guardian_shield_status', chave); } catch (e) {}
+            statusPerfil.value = chave;
+        }
+
+        function aplicarNome(nome) {
+            document.getElementById('perfilNome').textContent = nome || 'Usuário';
+        }
+
+        nomePerfil.value = lerSalvo('guardian_shield_nome', '');
+        aplicarNome(nomePerfil.value);
+        aplicarStatus(lerSalvo('guardian_shield_status', 'disponivel'));
+
+        salvarPerfil.addEventListener('click', () => {
+            try {
+                localStorage.setItem('guardian_shield_nome', nomePerfil.value.trim());
+            } catch (e) {}
+            salvarStatusGlobal(statusPerfil.value);
+            aplicarNome(nomePerfil.value.trim());
+            aplicarStatus(statusPerfil.value);
+            salvarPerfil.textContent = '✓ Salvo!';
+            setTimeout(() => salvarPerfil.textContent = 'Salvar', 1500);
+        });
+
+        // ==========================================
+        // 📞 SALA DE CHAMADA — botão Ligar
+        // ==========================================
+        const btnLigar = document.getElementById('btnLigar');
+        const statusConexao = document.getElementById('statusConexao');
+
+        function resetarSala() {
+            statusConexao.textContent = '⏳ Pronto para conectar';
+            btnLigar.style.background = 'linear-gradient(145deg, #22c55e, #16a34a)';
+            btnLigar.textContent = '📞';
+        }
+
+        btnLigar.addEventListener('click', () => {
+            statusConexao.textContent = '🔄 Conectando...';
+            setTimeout(() => {
+                statusConexao.textContent = '✅ Conectado! Abrindo conversa...';
+                btnLigar.style.background = 'linear-gradient(145deg, #3b82f6, #2563eb)';
+                btnLigar.textContent = '✓';
+                setTimeout(() => {
+                    document.querySelector('[data-pagina="conversa"]').click();
+                    iniciarChamada();
+                }, 800);
+            }, 1500);
+        });
 
         console.log('%c✨ Guardian Shield Completo com Busca Atualizada!', 'color: #10b981; font-weight: bold;');
     </script>
